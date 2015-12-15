@@ -18,7 +18,6 @@ def upload_thumbs(thumbs, path):
         filename = basename(full_filename)
         key = Key(bucket)
         key.key = '%s/%s' % (path, filename)
-        print(key.key)
         key.set_contents_from_filename(full_filename)
         key.set_acl('public-read')
         uploaded[thumb_name] = key.generate_url(expires_in=0, query_auth=False)
