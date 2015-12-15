@@ -33,3 +33,22 @@ Will delete the temporary local file when done.
 ## Web interface
 A very basic interface to browse through the uploaded files. This is just to
 have a quick view on what's currently backed up.
+
+
+# Setup
+
+You need to provide an environment variable `SETTINGS` that should point to
+a Yaml file containing the needed settings:
+
+## Settings
+
+The Yaml file should have the following keys:
+
+```
+UPLOAD_FOLDER: <directory for tmp uploads>
+DB_FILE: <Sqlite db file>
+S3_ACCESS_KEY: <AWS Access>
+S3_SECRET_KEY: <AWS Secret>
+S3_BUCKET: <Bucket name>
+
+```
