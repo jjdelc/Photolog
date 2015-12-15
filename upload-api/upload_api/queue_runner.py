@@ -13,7 +13,7 @@ if not os.path.exists(THUMBS_FOLDER):
 
 def process(filename, tags, upload_date):
     log.info('Processing %s' % filename)
-    exif = base.read_exif(filename)
+    exif = base.read_exif(filename, upload_date)
     thumbs = base.generate_thumbnails(filename, THUMBS_FOLDER)
 
     path = '%s/%s' % (exif['year'], exif['month'])

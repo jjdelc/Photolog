@@ -2,8 +2,11 @@ import os
 import exifread
 from PIL import Image
 from os.path import splitext, basename, join
+from upload_api.db import DB
+from upload_api import DB_FILE
 
 
+db = DB(DB_FILE)
 THUMBNAILS = {
     'thumb': 100,
     'medium': 320,
@@ -46,20 +49,23 @@ def store_photo(s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
         'flickr': flickr_url,
         'gphotos': gphotos_url
     }
-    pass
+    db.add_picture(values, tags)
 
 
 def delete_file(filename):
     pass
 
 
-def read_exif(filename):
+def read_exif(filename, upload_date):
     exif = exifread.process_file(open(filename, 'rb'))
-    timestamp = str(exif['EXIF DateTimeOriginal'])  # fmt='2015:12:04 00:50:53'
-    year, month, day = timestamp.split(' ')[0].split(':')
+    timestamp = None
+    year, month, day = upload_date.year, upload_date.month, upload_date.day
+    if 'EXIF DateTimeOriginal' in exif:
+        timestamp = str(exif['EXIF DateTimeOriginal'])  # fmt='2015:12:04 00:50:53'
+        year, month, day = timestamp.split(' ')[0].split(':')
     dims = Image.open(filename).size
-    brand = str(exif['Image Make'])
-    model = str(exif['Image Model'])
+    brand = str(exif.get('Image Make', 'Unknown camera'))
+    model = str(exif.get('Image Model', ''))
     return {
         'year': year,
         'month': month,
