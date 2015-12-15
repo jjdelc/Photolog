@@ -1,0 +1,9 @@
+venv
+media
+*py[cod]
+*.swp
+*.orig
+.idea
+*egg-info
+photos.db
+conf.py
