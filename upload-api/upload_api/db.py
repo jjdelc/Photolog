@@ -6,6 +6,14 @@ except ImportError:
     from _dummy_thread import get_ident
 
 
+# http://stackoverflow.com/a/3300514/43490
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 class DB(object):
     _create = (
             'CREATE TABLE IF NOT EXISTS pictures '
@@ -42,9 +50,13 @@ class DB(object):
             '  FOREIGN KEY(picture_id) REFERENCES pictures(id)'
             ');'
             )
-    _append = 'INSERT INTO pictures (item) VALUES (?)'
-    _get_tags = 'SELECT name from tags'
+    _add_picture = ('INSERT INTO pictures (%(fields)s) VALUES (%(values)s)')
+    _get_tags = 'SELECT name FROM tags'
+    _get_tag = 'SELECT id, name FROM tags WHERE name=?'
     _add_tag = 'INSERT INTO tags (name) VALUES (?)'
+    _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
+    _tagged_pics = ('SELECT * from pictures where id in '
+                    '(SELECT picture_id FROM tagged_pics WHERE tag_id = ?)')
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -56,21 +68,42 @@ class DB(object):
     def _get_conn(self):
         _id = get_ident()
         if _id not in self._connection_cache:
-            self._connection_cache[_id] = sqlite3.Connection(self.path,
-                                                             timeout=60)
+            conn = sqlite3.Connection(self.path, timeout=60)
+            conn.row_factory = dict_factory
+            self._connection_cache[_id] = conn
         return self._connection_cache[_id]
 
-    def add(self, obj):
+    def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
-            conn.execute(self._append, [])
-
-    def by_year_month(self, year, month):
-        pass
+            query = self._add_picture % {
+                'fields': ', '.join(picture_data.keys()),
+                'values': ', '.join([':%s' % k for k in picture_data.keys()]),
+            }
+            cur = conn.execute(query, picture_data)
+            picture_id = cur.lastrowid
+            for tag in tags:
+                t = self.get_tag(tag)
+                t_id = t['id']
+                conn.execute(self._tag_picture, [t_id, picture_id])
 
     def get_tags(self):
         with self._get_conn() as conn:
-            return {r[0] for r in conn.execute(self._get_tags)}
+            return {r['name'] for r in conn.execute(self._get_tags)}
 
     def add_tag(self, name):
         with self._get_conn() as conn:
-            conn.execute(self._add_tag, [name])
+            conn.execute(self._add_tag, [name.lower()])
+
+    def get_tag(self, name):
+        with self._get_conn() as conn:
+            matches = list(conn.execute(self._get_tag, [name.lower()]))
+            if not matches:
+                self.add_tag(name)
+                matches = list(conn.execute(self._get_tag, [name.lower()]))
+            return matches[0]
+
+    def tagged(self, name):
+        tag = self.get_tag(name)
+        t_id = tag['id']
+        with self._get_conn() as conn:
+            return [r for r in conn.execute(self._tagged_pics, [t_id])]

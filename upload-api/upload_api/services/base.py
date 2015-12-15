@@ -28,6 +28,24 @@ def generate_thumbnails(filename, thumbs_folder):
 
 
 def store_photo(s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
+    values = {
+        'year': exif['year'],
+        'month': exif['month'],
+        'day': exif['day'],
+        'date_taken': exif['timestamp'],
+        'upload_date': str(upload_date),
+        'camera': exif['camera'],
+        'width': exif['width'],
+        'height': exif['height'],
+        'size': exif['size'],
+        'original': s3_urls['original'],
+        'thumb': s3_urls['thumb'],
+        'medium': s3_urls['medium'],
+        'web': s3_urls['web'],
+        'large': s3_urls['large'],
+        'flickr': flickr_url,
+        'gphotos': gphotos_url
+    }
     pass
 
 
@@ -46,6 +64,7 @@ def read_exif(filename):
         'year': year,
         'month': month,
         'day': day,
+        'timestamp': timestamp,
         'camera': '%s %s' % (brand, model),
         'orientation': str(exif.get('Image Orientation', 'Horizontal (normal)')),
         'width': dims[0],
