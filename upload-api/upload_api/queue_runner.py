@@ -7,6 +7,9 @@ from .services import s3, gphotos, flickr, base
 queue = SqliteQueue(DB_FILE)
 THUMBS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbs')
 
+if not os.path.exists(THUMBS_FOLDER):
+    os.makedirs(THUMBS_FOLDER)
+
 
 def process(filename, tags, upload_date):
     log.info('Processing %s' % filename)
