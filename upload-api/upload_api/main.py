@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
 from .squeue import SqliteQueue
-from . import UPLOAD_FOLDER, DB_FILE, ALLOWED_FILES
+from . import UPLOAD_FOLDER, DB_FILE, ALLOWED_FILES, api_logger as log
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -59,10 +59,12 @@ def add_photo():
 
     uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     queue.append(filename)
+    log.info('Queued file: %s' % filename)
     return '', 201
 
 
 def start():
+    log.info('Starting API server')
     app.run(debug=True)
 
 
