@@ -28,11 +28,15 @@ def random_string():
 
 def unique_filename(filename, path):
     existing = {f.lower() for f in os.listdir(path)}
-    while filename.lower() in existing:
-        name, ext = os.path.splitext(filename)
+    # Season with hash initially anyway. This is to prevent file guesses
+    # if the public URL leaks.
+    name, ext = os.path.splitext(filename)
+    _hash = random_string()
+    final_filename = '%s-%s%s' % (name, _hash, ext)
+    while final_filename.lower() in existing:
         _hash = random_string()
-        filename = '%s-%s%s' % (name, _hash, ext)
-    return filename
+        final_filename = '%s-%s%s' % (name, _hash, ext)
+    return final_filename
 
 
 @app.route('/photos/', methods=['GET'])

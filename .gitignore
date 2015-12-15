@@ -6,4 +6,4 @@ media
 .idea
 *egg-info
 photos.db
-conf.py
+*.conf

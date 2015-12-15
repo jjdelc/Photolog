@@ -1,3 +1,5 @@
+import os
+import exifread
 from PIL import Image
 from os.path import splitext, basename, join
 
@@ -34,14 +36,20 @@ def delete_file(filename):
 
 
 def read_exif(filename):
+    exif = exifread.process_file(open(filename, 'rb'))
+    timestamp = str(exif['EXIF DateTimeOriginal'])  # fmt='2015:12:04 00:50:53'
+    year, month, day = timestamp.split(' ')[0].split(':')
+    dims = Image.open(filename).size
+    brand = str(exif['Image Make'])
+    model = str(exif['Image Model'])
     return {
-        'year': '',
-        'month': '',
-        'day': '',
-        'camera': '',
-        'orientation': '',
-        'width': 0,
-        'height': 0,
-        'size': 0,
+        'year': year,
+        'month': month,
+        'day': day,
+        'camera': '%s %s' % (brand, model),
+        'orientation': str(exif.get('Image Orientation', 'Horizontal (normal)')),
+        'width': dims[0],
+        'height': dims[1],
+        'size': os.stat(filename).st_size,
     }
 
