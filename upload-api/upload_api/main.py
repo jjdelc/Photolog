@@ -1,7 +1,8 @@
+import os
 import random
 import string
+from datetime import datetime
 
-import os
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
@@ -54,11 +55,17 @@ def add_photo():
             'error': 'Invalid file extension'
         }), 400
 
+    tags = request.form.get('tags', '')
+    tags = [t.strip().lower() for t in tags.split(',')]
     filename = unique_filename(secure_filename(uploaded_file.filename),
         app.config['UPLOAD_FOLDER'])
 
     uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    queue.append(filename)
+    queue.append({
+        'filename': filename,
+        'tags': tags,
+        'uploaded_at': datetime.now()
+    })
     log.info('Queued file: %s' % filename)
     return '', 201
 
