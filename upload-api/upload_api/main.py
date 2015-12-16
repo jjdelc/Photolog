@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
 from .squeue import SqliteQueue
-from . import UPLOAD_FOLDER, DB_FILE, ALLOWED_FILES, api_logger as log
+from . import UPLOAD_FOLDER, DB_FILE, ALLOWED_FILES, api_logger as log, DEBUG
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -78,9 +78,10 @@ def add_photo():
 
     uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     queue.append({
-        'key': uuid.uuid4(),
+        'key': uuid.uuid4().hex,
         'filename': filename,
         'tags': tags,
+        'original_filename': uploaded_file.filename,
         'uploaded_at': datetime.now(),
         'step': 'read_exif',  # read_exif is the first thing to do to the pics,
         'data': {},  # Store additional parameters,
@@ -92,7 +93,7 @@ def add_photo():
 
 def start():
     log.info('Starting API server')
-    app.run(debug=True)
+    app.run(debug=DEBUG)
 
 
 if __name__ == "__main__":
