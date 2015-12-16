@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Hola!</h1>
+<ol>
+{% for pic in pictures %}
+    <li>
+    <a href="{{ url_for('picture_detail', key=pic.key) }}">
+    <img src="{{ pic.thumb }}"/>
+        <p>{{ pic.id }}</p>
+    </a>
+    </li>
+{% endfor %}
+</ol>
+{% endblock %}

@@ -9,7 +9,8 @@ setup(
     entry_points={
         'console_scripts': [
             'start_api=upload_api.main:start',
-            'start_queue=upload_api.queue_runner:daemon'
+            'start_queue=upload_api.queue_runner:daemon',
+            'start_web=upload_api.webend.app:start'
         ]
     }
 )
