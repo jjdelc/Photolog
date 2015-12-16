@@ -2,6 +2,7 @@ import os
 import uuid
 import random
 import string
+import binascii
 from datetime import datetime
 
 from flask import Flask, request, jsonify
@@ -27,17 +28,28 @@ def random_string():
     return ''.join([random.choice(string.ascii_letters) for _ in range(6)])
 
 
-def unique_filename(filename, path):
+def unique_filename(filename, salt, path):
     existing = {f.lower() for f in os.listdir(path)}
     # Season with hash initially anyway. This is to prevent file guesses
     # if the public URL leaks.
     name, ext = os.path.splitext(filename)
     _hash = random_string()
-    final_filename = '%s-%s%s' % (name, _hash, ext)
+    final_filename = '%s-%s-%s%s' % (name, salt, _hash, ext)
     while final_filename.lower() in existing:
         _hash = random_string()
-        final_filename = '%s-%s%s' % (name, _hash, ext)
+        final_filename = '%s-%s-%s%s' % (name, salt, _hash, ext)
     return final_filename
+
+
+def crc(file):
+    buf = file.read()
+    file.seek(0)
+    return '%08X' % (binascii.crc32(buf) & 0xFFFFFFFF)
+
+
+def filename_for_file(uploaded_file, path):
+    _crc = crc(uploaded_file)
+    return unique_filename(secure_filename(uploaded_file.filename), _crc, path)
 
 
 @app.route('/photos/', methods=['GET'])
@@ -62,8 +74,7 @@ def add_photo():
 
     tags = request.form.get('tags', '')
     tags = [t.strip().lower() for t in tags.split(',')]
-    filename = unique_filename(secure_filename(uploaded_file.filename),
-        app.config['UPLOAD_FOLDER'])
+    filename = filename_for_file(uploaded_file, app.config['UPLOAD_FOLDER'])
 
     uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     queue.append({

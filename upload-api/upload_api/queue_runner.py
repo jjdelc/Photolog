@@ -24,6 +24,8 @@ def process_task(job):
     key = job['key']
 
     log.info('Processing %s - Step: %s (%s)' % (key, step, base_file))
+    if job['attempt'] > 0:
+        log.info('Attempt %s for %s' % (job['attempt'], key))
     if step == 'read_exif':
         exif = base.read_exif(filename, upload_date)
         job['data']['exif'] = exif
@@ -59,6 +61,7 @@ def process_task(job):
         base.delete_file(filename)
         log.info('Finished %s (%s)' % (key, base_file))
         return None
+    job['attempt'] = 0  # Step completed. Start next job fresh
     return job
 
 
