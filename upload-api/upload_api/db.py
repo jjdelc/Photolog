@@ -19,6 +19,8 @@ class DB(object):
             'CREATE TABLE IF NOT EXISTS pictures '
             '('
             '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
+            '  name TEXT,'
+            '  key TEXT,'
             '  original TEXT,'
             '  thumb TEXT,'
             '  medium TEXT,'
@@ -50,13 +52,17 @@ class DB(object):
             '  FOREIGN KEY(picture_id) REFERENCES pictures(id)'
             ');'
             )
-    _add_picture = ('INSERT INTO pictures (%(fields)s) VALUES (%(values)s)')
+    _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
+    _get_pictures = 'SELECT * FROM pictures LIMIT ? OFFSET ?'
+    _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tags = 'SELECT name FROM tags'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
     _add_tag = 'INSERT INTO tags (name) VALUES (?)'
     _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
     _tagged_pics = ('SELECT * from pictures where id in '
                     '(SELECT picture_id FROM tagged_pics WHERE tag_id = ?)')
+    _pic_tags = ('SELECT name FROM tags WHERE id in '
+                 '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -86,6 +92,14 @@ class DB(object):
                 t_id = t['id']
                 conn.execute(self._tag_picture, [t_id, picture_id])
 
+    def get_pictures(self, offset, limit):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_pictures, (limit, offset))
+
+    def get_picture(self, key):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_picture, [key]).fetchone()
+
     def get_tags(self):
         with self._get_conn() as conn:
             return {r['name'] for r in conn.execute(self._get_tags)}
@@ -107,3 +121,7 @@ class DB(object):
         t_id = tag['id']
         with self._get_conn() as conn:
             return [r for r in conn.execute(self._tagged_pics, [t_id])]
+
+    def tags_for_picture(self, picture_id):
+        with self._get_conn() as conn:
+            return [t['name'] for t in conn.execute(self._pic_tags, [picture_id])]
