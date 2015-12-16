@@ -1,4 +1,5 @@
 import os
+import uuid
 import random
 import string
 from datetime import datetime
@@ -66,9 +67,13 @@ def add_photo():
 
     uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     queue.append({
+        'key': uuid.uuid4(),
         'filename': filename,
         'tags': tags,
-        'uploaded_at': datetime.now()
+        'uploaded_at': datetime.now(),
+        'step': 'read_exif',  # read_exif is the first thing to do to the pics,
+        'data': {},  # Store additional parameters,
+        'attempt': 0,  # Records how many times this step has been attempted
     })
     log.info('Queued file: %s' % filename)
     return '', 201

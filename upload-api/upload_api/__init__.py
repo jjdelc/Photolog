@@ -8,7 +8,7 @@ api_logger = logging.getLogger('API')
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG
+    level=logging.INFO
 )
 ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 

@@ -2,11 +2,8 @@ import os
 import exifread
 from PIL import Image
 from os.path import splitext, basename, join
-from upload_api.db import DB
-from upload_api import DB_FILE
 
 
-db = DB(DB_FILE)
 THUMBNAILS = {
     'thumb': 100,
     'medium': 320,
@@ -30,7 +27,7 @@ def generate_thumbnails(filename, thumbs_folder):
     return generated
 
 
-def store_photo(s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
+def store_photo(db, s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
     values = {
         'year': exif['year'],
         'month': exif['month'],
