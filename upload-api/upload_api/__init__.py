@@ -5,6 +5,7 @@ import logging
 
 queue_logger = logging.getLogger('QUEUE')
 api_logger = logging.getLogger('API')
+web_logger = logging.getLogger('WEB')
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -17,6 +18,7 @@ settings = yaml.load(open(settings_file).read())
 
 PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
 
+DEBUG = settings.get('DEBUG', True)
 UPLOAD_FOLDER = settings.get('UPLOAD_FOLDER', os.path.join(PROJECT_DIR, 'media'))
 DB_FILE = settings.get('DB_FILE', os.path.join(PROJECT_DIR, 'photos.db'))
 
