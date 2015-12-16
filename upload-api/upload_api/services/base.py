@@ -27,8 +27,10 @@ def generate_thumbnails(filename, thumbs_folder):
     return generated
 
 
-def store_photo(db, s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
+def store_photo(db, key, name, s3_urls, flickr_url, gphotos_url, tags, upload_date, exif):
     values = {
+        'name': name,
+        'key': key,
         'year': exif['year'],
         'month': exif['month'],
         'day': exif['day'],

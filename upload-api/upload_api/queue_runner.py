@@ -25,7 +25,7 @@ def process_task(job):
 
     log.info('Processing %s - Step: %s (%s)' % (key, step, base_file))
     if job['attempt'] > 0:
-        log.info('Attempt %s for %s' % (job['attempt'], key))
+        log.info('Attempt %s for %s - %s' % (job['attempt'], step, key))
     if step == 'read_exif':
         exif = base.read_exif(filename, upload_date)
         job['data']['exif'] = exif
@@ -54,7 +54,8 @@ def process_task(job):
         s3_urls = job['data']['s3_urls']
         flickr_url = job['data']['flickr_url']
         gphotos_url = job['data']['gphotos_url']
-        base.store_photo(db, s3_urls, flickr_url, gphotos_url, tags,
+        name = job['original_filename']
+        base.store_photo(db, key, name, s3_urls, flickr_url, gphotos_url, tags,
             upload_date, exif)
         job['step'] = 'finish'
     elif step == 'finish':
@@ -78,7 +79,7 @@ def daemon():
         except SystemExit as inter:
             log.info('Daemon interrupted')
             daemon_started = False
-        except Exception:
+        except Exception as exc:
             if task['attempt'] <= MAX_ATTEMPTS:
                 task['attempt'] += 1
                 queue.append(task)
