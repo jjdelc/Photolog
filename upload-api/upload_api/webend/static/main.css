@@ -1,0 +1,35 @@
+html {
+background: white;
+font-family: 'Open-sans', sans-serif;
+}
+
+.photo-thumb-list {
+list-style-type: none;
+padding: 0;
+margin: 0;
+display: flex;
+flex-wrap: wrap;
+}
+
+.photo-thumb-list li {
+flex: 1 0 auto;
+}
+.paginator {
+list-style-type: none;
+padding: 0;
+display: flex;
+font-size: 0.8rem;
+margin: 0 auto;
+}
+.paginator li a {
+display: block;
+text-decoration: none;
+text-align: center;
+width: 3rem;
+}
+.paginator li a.current {
+font-weight: bold;
+}
+.paginator .pate-count {
+color: #AAA;
+}

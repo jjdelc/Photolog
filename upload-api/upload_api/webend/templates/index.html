@@ -1,14 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Hola!</h1>
-<ol>
+<ol class="photo-thumb-list">
 {% for pic in pictures %}
     <li>
     <a href="{{ url_for('picture_detail', key=pic.key) }}">
-    <img src="{{ pic.thumb }}"/>
-        <p>{{ pic.id }}</p>
+        <img src="{{ pic.thumb }}"/>
     </a>
     </li>
 {% endfor %}
 </ol>
+<ol class="paginator">
+{% if paginator.prev %}
+    <li><a href="?page={{paginator.prev}}"><i class="fa fa-chevron-left"></i> </a></li>
+{% else %}
+    <li><a><i class="fa fa-chevron-left"></i> </a></li>
+{% endif %}
+{% for page in paginator.adjacent %}
+    <li><a href="?page={{ page }}" class="{% if page == paginator.current %}current{% endif %}">{{ page }}</a></li>
+{% endfor %}
+{% if paginator.next %}
+    <li><a href="?page={{paginator.next}}"><i class="fa fa-chevron-right"></i> </a></li>
+{% else %}
+    <li><a><i class="fa fa-chevron-right"></i> </a></li>
+{% endif %}
+    <li class="page-count">{{ paginator.total_pages }} pages</li>
+</ol>
+<p>Total images: {{ db_total }}</p>
 {% endblock %}

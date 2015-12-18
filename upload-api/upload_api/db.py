@@ -64,6 +64,7 @@ class DB(object):
                     '(SELECT picture_id FROM tagged_pics WHERE tag_id = ?)')
     _pic_tags = ('SELECT name FROM tags WHERE id in '
                  '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
+    _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -100,6 +101,10 @@ class DB(object):
     def get_picture(self, key):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
+
+    def total_pictures(self):
+        with self._get_conn() as conn:
+            return conn.execute(self._total_pictures).fetchone()['count']
 
     def update_picture(self, key, attr, value):
         with self._get_conn() as conn:
