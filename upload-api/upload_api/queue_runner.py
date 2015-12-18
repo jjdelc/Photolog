@@ -115,6 +115,8 @@ def daemon(db, settings, queue):
             log.info('Daemon interrupted')
             daemon_started = False
         except SystemExit as inter:
+            # If job was interrupted, don't toss job.
+            queue.append(job)
             log.info('Daemon interrupted')
             daemon_started = False
         except Exception as exc:
@@ -125,6 +127,7 @@ def daemon(db, settings, queue):
             else:
                 # What should it do? Send a notification, record an error?
                 # Don't loose the task
+                queue.append_bad(job)
                 pass
         else:
             if next_job:

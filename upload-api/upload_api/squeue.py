@@ -11,16 +11,23 @@ except ImportError:
 
 class SqliteQueue(object):
 
-    _create = (
+    _create = [(
             'CREATE TABLE IF NOT EXISTS queue ' 
             '('
             '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
             '  item BLOB'
             ')'
-            )
+            ), (
+            'CREATE TABLE IF NOT EXISTS bad_jobs '
+            '('
+            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
+            '  item BLOB'
+            ')'
+            )]
     _count = 'SELECT COUNT(*) FROM queue'
     _iterate = 'SELECT id, item FROM queue'
     _append = 'INSERT INTO queue (item) VALUES (?)'
+    _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
     _write_lock = 'BEGIN IMMEDIATE'
     _popleft_get = (
             'SELECT id, item FROM queue '
@@ -36,7 +43,8 @@ class SqliteQueue(object):
         self.path = os.path.abspath(path)
         self._connection_cache = {}
         with self._get_conn() as conn:
-            conn.execute(self._create)
+            for table in self._create:
+                conn.execute(table)
 
     def __len__(self):
         with self._get_conn() as conn:
@@ -58,7 +66,12 @@ class SqliteQueue(object):
     def append(self, obj):
         obj_buffer = memoryview(dumps(obj, 2))
         with self._get_conn() as conn:
-            conn.execute(self._append, (obj_buffer,)) 
+            conn.execute(self._append, (obj_buffer,))
+
+    def append_bad(self, obj):
+        obj_buffer = memoryview(dumps(obj, 2))
+        with self._get_conn() as conn:
+            conn.execute(self._append_bad, (obj_buffer,))
 
     def popleft(self, sleep_wait=True):
         keep_pooling = True
