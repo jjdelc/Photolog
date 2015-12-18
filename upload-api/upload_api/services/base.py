@@ -1,4 +1,6 @@
 import os
+import random
+import string
 import exifread
 from PIL import Image
 from os.path import splitext, basename, join
@@ -12,6 +14,10 @@ THUMBNAILS = {
 }
 
 
+def random_string():
+    return ''.join([random.choice(string.ascii_letters) for _ in range(6)])
+
+
 def generate_thumbnails(filename, thumbs_folder):
     generated = {
         'original': filename
@@ -20,7 +26,10 @@ def generate_thumbnails(filename, thumbs_folder):
     name, ext = splitext(base)
     for thumb_name, dim in THUMBNAILS.items():
         orig = Image.open(filename)
-        out_name = join(thumbs_folder, '%s--%s-%s' % (name, thumb_name, ext))
+        _hash = random_string()
+        # I want each thumbnail have a different random string so you cannot
+        # guess the other size from the URL
+        out_name = join(thumbs_folder, '%s--%s-%s%s' % (name, thumb_name, _hash, ext))
         generated[thumb_name] = out_name
         orig.thumbnail((dim, dim))
         orig.save(out_name, format='JPEG', quality=85, progressive=True)

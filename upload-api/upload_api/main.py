@@ -1,7 +1,5 @@
 import os
 import uuid
-import random
-import string
 import binascii
 from datetime import datetime
 
@@ -11,6 +9,7 @@ from werkzeug.utils import secure_filename
 from .squeue import SqliteQueue
 from . import api_logger as log, settings_file
 from .settings import Setting
+from .services.base import random_string
 
 ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 settings = Setting.load(settings_file)
@@ -25,17 +24,12 @@ def allowed_file(filename):
         filename.rsplit('.', 1)[1].lower() in ALLOWED_FILES
 
 
-def random_string():
-    return ''.join([random.choice(string.ascii_letters) for _ in range(6)])
-
-
 def unique_filename(filename, salt, path):
     existing = {f.lower() for f in os.listdir(path)}
     # Season with hash initially anyway. This is to prevent file guesses
     # if the public URL leaks.
     name, ext = os.path.splitext(filename)
-    _hash = random_string()
-    final_filename = '%s-%s-%s%s' % (name, salt, _hash, ext)
+    final_filename = '%s-%s%s' % (name, salt, ext)
     while final_filename.lower() in existing:
         _hash = random_string()
         final_filename = '%s-%s-%s%s' % (name, salt, _hash, ext)
