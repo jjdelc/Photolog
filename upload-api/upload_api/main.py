@@ -103,7 +103,3 @@ def start():
     log.info('Starting API server')
     app.run(debug=settings.DEBUG)
 
-
-if __name__ == "__main__":
-    start()
-
