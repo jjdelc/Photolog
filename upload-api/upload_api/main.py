@@ -9,9 +9,10 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
 from .squeue import SqliteQueue
-from . import ALLOWED_FILES, api_logger as log, settings_file
+from . import api_logger as log, settings_file
 from .settings import Setting
 
+ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 settings = Setting.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
 

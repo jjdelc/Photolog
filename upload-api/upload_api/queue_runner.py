@@ -72,7 +72,7 @@ def finish_job(db, settings, job):
     return None
 
 
-steps = {
+steps = {  # Step function, Next job
     'read_exif': (read_exif, 'thumbs'),
     'thumbs': (generate_thumbs, 's3_upload'),
     's3_upload': (s3_upload, 'local_store'),
@@ -133,7 +133,7 @@ def daemon(db, settings, queue):
             if next_job:
                 queue.append(next_job)
 
-    log.info("Closing daemon")
+    log.info("Finishing daemon")
 
 
 def start_daemon():
