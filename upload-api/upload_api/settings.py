@@ -13,7 +13,7 @@ class Setting(object):
     @classmethod
     def load(cls, settings_file):
         settings = yaml.load(open(settings_file).read())
-        return cls(settings)
+        return cls(**settings)
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():

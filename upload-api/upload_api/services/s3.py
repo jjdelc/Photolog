@@ -3,16 +3,15 @@
 from boto.s3.key import Key
 from os.path import basename
 from boto.s3.connection import S3Connection
-from upload_api import S3_ACCESS_KEY, S3_BUCKET, S3_SECRET_KEY
 
 
-def upload_thumbs(thumbs, path):
+def upload_thumbs(settings, thumbs, path):
     """
     Receives an object with a list of thumbnails, uploads them to s3 and returns
      another object with the s3 urls of those files
     """
-    conn = S3Connection(S3_ACCESS_KEY, S3_SECRET_KEY)
-    bucket = conn.get_bucket(S3_BUCKET, validate=False)
+    conn = S3Connection(settings.S3_ACCESS_KEY, settings.S3_SECRET_KEY)
+    bucket = conn.get_bucket(settings.S3_BUCKET, validate=False)
     uploaded = {}
     for thumb_name, full_filename in thumbs.items():
         filename = basename(full_filename)

@@ -45,7 +45,7 @@ def s3_upload(db, settings, job):
     exif = job['data']['exif']
     thumbs = job['data']['thumbs']
     path = '%s/%s' % (exif['year'], exif['month'])
-    s3_urls = s3.upload_thumbs(thumbs, path)
+    s3_urls = s3.upload_thumbs(settings, thumbs, path)
     job['data']['s3_urls'] = s3_urls
     return job
 
