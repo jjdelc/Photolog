@@ -9,7 +9,7 @@ settings = Setting.load(settings_file)
 db = DB(settings.DB_FILE)
 app = Flask(__name__)
 
-PAGE_SIZE = 3
+PAGE_SIZE = 24
 
 
 def get_paginator(total, page_size, current):
@@ -28,9 +28,12 @@ def get_paginator(total, page_size, current):
     }
 
 
-def pictures_for_page(db, page_num):
+def pictures_for_page(db, page_num, tags=None):
     offset, limit = (page_num - 1) * PAGE_SIZE, PAGE_SIZE
-    db_pics = list(db.get_pictures(offset, limit))
+    if not tags:
+        db_pics = list(db.get_pictures(offset, limit))
+    else:
+        db_pics = list(db.get_tagged_pictures(tags, offset, limit))
     return db_pics
 
 
@@ -40,10 +43,12 @@ def index():
     pictures = pictures_for_page(db, page)
     db_total = db.total_pictures()
     paginator = get_paginator(db_total, PAGE_SIZE, page)
+    all_tags = db.get_tags()
     ctx = {
         'pictures': pictures,
-        'db_total': db_total,
-        'paginator': paginator
+        'total': db_total,
+        'paginator': paginator,
+        'all_tags': all_tags,
     }
     return render_template('index.html', **ctx)
 
@@ -57,6 +62,23 @@ def picture_detail(key):
         'tags': tags,
     })
 
+
+@app.route('/tags/<string:tag_list>/')
+def view_tags(tag_list):
+    page = int(request.args.get('page', '1'))
+    tags = [t.lower() for t in tag_list.split(',') if t]
+    pictures = pictures_for_page(db, page, tags)
+    tagged_total = db.total_for_tags(tags)
+    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    all_tags = db.get_tags()
+    ctx = {
+        'selected_tags': tags,
+        'all_tags': all_tags,
+        'pictures': pictures,
+        'paginator': paginator,
+        'total': tagged_total,
+    }
+    return render_template('index.html', **ctx)
 
 def start():
     log.info('Starting WEB server')

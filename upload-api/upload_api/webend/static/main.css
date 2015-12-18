@@ -33,3 +33,19 @@ font-weight: bold;
 .paginator .pate-count {
 color: #AAA;
 }
+.tag-list {
+list-style-type: none;
+padding: 0;
+}
+.tag-list li {
+display: inline-block;
+}
+.tag-list a {
+display: block;
+background: blue;
+padding: 0.2rem 0.5rem;
+text-decoration: none;
+color: white;
+border-radius: 0.5em;
+font-size: 0.8rem;
+}

@@ -55,8 +55,12 @@ class DB(object):
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
     _get_pictures = 'SELECT * FROM pictures LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
+    _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
+                            '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
+                            'LIMIT ? OFFSET ?')
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _get_tags = 'SELECT name FROM tags'
+    _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
     _add_tag = 'INSERT INTO tags (name) VALUES (?)'
     _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
@@ -65,6 +69,7 @@ class DB(object):
     _pic_tags = ('SELECT name FROM tags WHERE id in '
                  '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
     _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
+    _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -98,6 +103,13 @@ class DB(object):
         with self._get_conn() as conn:
             return conn.execute(self._get_pictures, (limit, offset))
 
+    def get_tagged_pictures(self, tags, offset, limit):
+        with self._get_conn() as conn:
+            tag_ids = [str(t['id'])
+                       for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
+            return conn.execute(self._get_tagged_pictures,
+                (', '.join(tag_ids), limit, offset))
+
     def get_picture(self, key):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
@@ -105,6 +117,12 @@ class DB(object):
     def total_pictures(self):
         with self._get_conn() as conn:
             return conn.execute(self._total_pictures).fetchone()['count']
+
+    def total_for_tags(self, tags):
+        with self._get_conn() as conn:
+            tag_ids = [str(t['id'])
+                       for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
+            return conn.execute(self._total_for_tags, [', '.join(tag_ids)]).fetchone()['count']
 
     def update_picture(self, key, attr, value):
         with self._get_conn() as conn:
