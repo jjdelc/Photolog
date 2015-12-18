@@ -8,8 +8,8 @@ from .services import s3, gphotos, flickr, base
 from .settings import Setting
 
 
-def job_fname(job, set):
-    return os.path.join(set.UPLOAD_FOLDER, job['filename'])
+def job_fname(job, settings):
+    return os.path.join(settings.UPLOAD_FOLDER, job['filename'])
 
 
 def read_exif(db, settings, job):
@@ -87,7 +87,6 @@ def process_task(db, settings, job):
     filename = os.path.join(settings.UPLOAD_FOLDER, job['filename'])
     base_file = os.path.basename(filename)
     key = job['key']
-    settings = None
 
     log.info('Processing %s - Step: %s (%s)' % (key, step, base_file))
     if job['attempt'] > 0:

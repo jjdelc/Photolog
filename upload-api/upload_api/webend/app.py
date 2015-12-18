@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request
 
-from upload_api import DB_FILE, web_logger as log, DEBUG
+from upload_api import web_logger as log, settings_file
 from upload_api.db import DB
+from upload_api.settings import Setting
 
-
-db = DB(DB_FILE)
+settings = Setting.load(settings_file)
+db = DB(settings.DB_FILE)
 app = Flask(__name__)
 
 PAGE_SIZE = 20
@@ -38,7 +39,7 @@ def picture_detail(key):
 
 def start():
     log.info('Starting WEB server')
-    app.run(debug=DEBUG, port=5001)
+    app.run(debug=settings.DEBUG, port=5001)
 
 
 if __name__ == "__main__":
