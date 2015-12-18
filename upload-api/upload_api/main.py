@@ -9,14 +9,14 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
 from .squeue import SqliteQueue
-from . import UPLOAD_FOLDER, DB_FILE, ALLOWED_FILES, api_logger as log, DEBUG
+from . import ALLOWED_FILES, api_logger as log, settings_file
+from .settings import Setting
+
+settings = Setting.load(settings_file)
+queue = SqliteQueue(settings.DB_FILE)
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # 32MB
-
-
-queue = SqliteQueue(DB_FILE)
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB
 
 
 def allowed_file(filename):
@@ -47,9 +47,27 @@ def crc(file):
     return '%08X' % (binascii.crc32(buf) & 0xFFFFFFFF)
 
 
-def filename_for_file(uploaded_file, path):
+def filename_for_file(uploaded_file, filename, path):
     _crc = crc(uploaded_file)
-    return unique_filename(secure_filename(uploaded_file.filename), _crc, path)
+    return unique_filename(secure_filename(filename), _crc, path)
+
+
+def _add_photo(_settings, _queue, uploaded_file, base_filename, tags):
+    filename = filename_for_file(uploaded_file, base_filename,
+                                 _settings.UPLOAD_FOLDER)
+
+    uploaded_file.save(os.path.join(_settings.UPLOAD_FOLDER, filename))
+    _queue.append({
+        'key': uuid.uuid4().hex,
+        'filename': filename,
+        'tags': tags,
+        'original_filename': uploaded_file.filename,
+        'uploaded_at': datetime.now(),
+        'step': 'read_exif',  # read_exif is the first thing to do to the pics,
+        'data': {},  # Store additional parameters,
+        'attempt': 0,  # Records how many times this step has been attempted
+    })
+    return filename
 
 
 @app.route('/photos/', methods=['GET'])
@@ -74,26 +92,15 @@ def add_photo():
 
     tags = request.form.get('tags', '')
     tags = [t.strip().lower() for t in tags.split(',')]
-    filename = filename_for_file(uploaded_file, app.config['UPLOAD_FOLDER'])
-
-    uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    queue.append({
-        'key': uuid.uuid4().hex,
-        'filename': filename,
-        'tags': tags,
-        'original_filename': uploaded_file.filename,
-        'uploaded_at': datetime.now(),
-        'step': 'read_exif',  # read_exif is the first thing to do to the pics,
-        'data': {},  # Store additional parameters,
-        'attempt': 0,  # Records how many times this step has been attempted
-    })
+    filename = _add_photo(settings, queue, uploaded_file,
+                          uploaded_file.filename, tags)
     log.info('Queued file: %s' % filename)
     return '', 201
 
 
 def start():
     log.info('Starting API server')
-    app.run(debug=DEBUG)
+    app.run(debug=settings.DEBUG)
 
 
 if __name__ == "__main__":
