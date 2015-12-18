@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 
-settings_file = os.environ['SETTINGS']
+settings_file = os.environ.get('SETTINGS')
 # settings = yaml.load(open(settings_file).read())
 #
 # PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))

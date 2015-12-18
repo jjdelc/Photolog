@@ -24,13 +24,10 @@ def local_store(db, settings, job):
     upload_date = job['uploaded_at']
     exif = job['data']['exif']
     s3_urls = job['data']['s3_urls']
-    flickr_url = job['data']['flickr_url']
-    gphotos_url = job['data']['gphotos_url']
     name = job['original_filename']
     key = job['key']
     tags = job['tags']
-    base.store_photo(db, key, name, s3_urls, flickr_url, gphotos_url, tags,
-        upload_date, exif)
+    base.store_photo(db, key, name, s3_urls, tags, upload_date, exif)
     return job
 
 
@@ -52,15 +49,19 @@ def s3_upload(db, settings, job):
 
 def flickr_upload(db, settings, job):
     tags = job['tags']
+    key = job['key']
     filename = job_fname(job, settings)
     flickr_url = flickr.upload(filename, tags)
+    db.update_picture(key, 'flickr', flickr_url)
     job['data']['flickr_url'] = flickr_url
     return job
 
 
 def gphotos_upload(db, settings, job):
+    key = job['key']
     filename = job_fname(job, settings)
     gphotos_url = gphotos.upload(filename)
+    db.update_picture(key, 'gphotos', gphotos_url)
     job['data']['gphotos_url'] = gphotos_url
     return job
 
@@ -74,10 +75,10 @@ def finish_job(db, settings, job):
 steps = {
     'read_exif': (read_exif, 'thumbs'),
     'thumbs': (generate_thumbs, 's3_upload'),
-    's3_upload': (s3_upload, 'flickr'),
+    's3_upload': (s3_upload, 'local_store'),
+    'local_store': (local_store, 'flickr'),
     'flickr': (flickr_upload, 'gphotos'),
-    'gphotos': (gphotos_upload, 'local_store'),
-    'local_store': (local_store, 'finish'),
+    'gphotos': (gphotos_upload, 'finish'),
     'finish': (finish_job, None)
 }
 

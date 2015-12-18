@@ -55,6 +55,7 @@ class DB(object):
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
     _get_pictures = 'SELECT * FROM pictures LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
+    _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _get_tags = 'SELECT name FROM tags'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
     _add_tag = 'INSERT INTO tags (name) VALUES (?)'
@@ -99,6 +100,10 @@ class DB(object):
     def get_picture(self, key):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
+
+    def update_picture(self, key, attr, value):
+        with self._get_conn() as conn:
+            return conn.execute(self._update_picture % attr, [value, key])
 
     def get_tags(self):
         with self._get_conn() as conn:

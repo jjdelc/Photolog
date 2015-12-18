@@ -38,3 +38,18 @@ class TestDB(TestCase):
         self.assertEqual({p['original'] for p in phone}, {
             'original.jpg', 'original2.jpg'
         })
+
+    def test_update_picture(self):
+        db_file = os.path.join(TEST_FILES, 'test_update_picture.db')
+        db = DB(db_file)
+        key = 'test_update_picture'
+
+        attr = 'flickr'
+        value = 'http://flickr/url'
+        db.add_picture({
+            'key': key,
+            'original': 'original.jpg'
+        }, [])
+        db.update_picture(key, attr, value)
+        pic = db.get_picture(key)
+        self.assertEqual(pic[attr], value)
