@@ -1,6 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>{{ picture.name }}</h1>
+<figure class="main-picture-detail">
 <img src="{{ picture.web }}"/>
-<p>{{ tags }}</p>
+<figcaption>{{ picture.name }}</figcaption>
+</figure>
+
+<ul class="tag-list">
+    <li><a href="/">All</a></li>
+{% for tag in tags %}
+    <li>
+    <a href="{{ url_for('view_tags', tag_list=tag) }}">{{ tag }}</a>
+    </li>
+{% endfor %}
+</ul>
+
+<dl>
+<dt><label for="link-original">Original</label></dt>
+<dd><input id="link-original" readonly value="{{ picture.original }}">
+    <a class="fa fa-chain" href="{{ picture.original }}"></a>
+</dd>
+<dt><label for="link-original">Large</label></dt>
+<dd><input id="link-original" readonly value="{{ picture.large }}">
+<a class="fa fa-chain" href="{{ picture.large }}"></a></dd>
+<dt><label for="link-web">Web (1200px)</label></dt>
+<dd><input id="link-web" readonly value="{{ picture.web }}">
+<a class="fa fa-chain" href="{{ picture.web }}"></a></dd>
+<dt><label for="link-original">Medium (320px)</label></dt>
+<dd><input id="link-original" readonly value="{{ picture.medium }}">
+<a class="fa fa-chain" href="{{ picture.medium }}"></a></dd>
+</dl>
+
 {% endblock %}

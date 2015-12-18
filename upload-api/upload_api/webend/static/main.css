@@ -49,3 +49,13 @@ color: white;
 border-radius: 0.5em;
 font-size: 0.8rem;
 }
+.main-picture-detail {
+max-width: 100%;
+margin: 0;
+}
+.main-picture-detail img {
+display: block;
+margin: 0 auto;
+max-width: 100%;
+height: auto;
+}
