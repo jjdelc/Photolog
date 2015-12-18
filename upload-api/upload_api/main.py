@@ -72,7 +72,7 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags):
 
 
 @app.route('/photos/', methods=['GET'])
-def get_photos():
+def get_photo():
     return jsonify({
         'last': queue.peek()
     }), 200
