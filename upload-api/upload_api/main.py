@@ -1,6 +1,8 @@
 import os
+import re
 import uuid
 import binascii
+import unicodedata
 from datetime import datetime
 
 from flask import Flask, request, jsonify
@@ -40,6 +42,16 @@ def crc(file):
     buf = file.read()
     file.seek(0)
     return '%08X' % (binascii.crc32(buf) & 0xFFFFFFFF)
+
+
+def slugify(text):
+    """
+    Slugify inspired in Django's slugify
+    """
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
+    text = re.sub('[^\w\s-]', '', text).strip().lower()
+    text = re.sub('[-\s]+', '-', text)
+    return text
 
 
 def filename_for_file(uploaded_file, filename, path):
@@ -86,7 +98,7 @@ def add_photo():
         }), 400
 
     tags = request.form.get('tags', '')
-    tags = {t.strip().lower() for t in tags.split(',')}
+    tags = {slugify(t) for t in tags.split(',')}
     tags = [t for t in tags if t]  # Strip empty
     filename = _add_photo(settings, queue, uploaded_file,
                           uploaded_file.filename, tags)
