@@ -113,7 +113,7 @@ color: #cccccc;
 dt {
 float: left;
 clear: left;
-width: 8rem;
+width: 9rem;
 font-size: 0.9rem;
 font-weight: bold;
 }
@@ -123,6 +123,11 @@ content: ":";
 dd {
 font-size: 0.9rem;
 font-style: italic;
+}
+dd, dt {
+height: 1.5rem;
+display: flex;
+align-items: center;
 }
 .permalink {
 border: 1px solid #cccccc;
