@@ -97,7 +97,7 @@ def view_tags(tag_list):
 
 def start():
     log.info('Starting WEB server')
-    app.run(debug=settings.DEBUG, port=5001)
+    app.run(debug=settings.DEBUG, port=5001, host='0.0.0.0')
 
 
 if __name__ == "__main__":
