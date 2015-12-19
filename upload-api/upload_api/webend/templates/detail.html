@@ -31,18 +31,17 @@
 
 <dl>
 <dt><label for="link-original">Original</label></dt>
-<dd><input id="link-original" readonly value="{{ picture.original }}">
-    <a class="fa fa-chain" href="{{ picture.original }}"></a>
-</dd>
+<dd><input id="link-original"  class="permalink"readonly value="{{ picture.original }}">
+<a class="fa fa-chain permalink-link" href="{{ picture.original }}"></a></dd>
 <dt><label for="link-original">Large</label></dt>
-<dd><input id="link-original" readonly value="{{ picture.large }}">
-<a class="fa fa-chain" href="{{ picture.large }}"></a></dd>
+<dd><input id="link-original" class="permalink" readonly value="{{ picture.large }}">
+<a class="fa fa-chain permalink-link" href="{{ picture.large }}"></a></dd>
 <dt><label for="link-web">Web (1200px)</label></dt>
-<dd><input id="link-web" readonly value="{{ picture.web }}">
-<a class="fa fa-chain" href="{{ picture.web }}"></a></dd>
+<dd><input id="link-web" class="permalink" readonly value="{{ picture.web }}">
+<a class="fa fa-chain permalink-link" href="{{ picture.web }}"></a></dd>
 <dt><label for="link-original">Medium (320px)</label></dt>
-<dd><input id="link-original" readonly value="{{ picture.medium }}">
-<a class="fa fa-chain" href="{{ picture.medium }}"></a></dd>
+<dd><input id="link-original" class="permalink" readonly value="{{ picture.medium }}">
+<a class="fa fa-chain permalink-link" href="{{ picture.medium }}"></a></dd>
 </dl>
 
 {% endblock %}
