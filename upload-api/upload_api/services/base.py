@@ -1,10 +1,12 @@
 import os
 import random
 import string
+import piexif
+import shutil
 import exifread
 from time import time
-from PIL import Image
-from os.path import splitext, basename, join, dirname
+from PIL import Image, ExifTags
+from os.path import splitext, basename, join
 
 
 THUMBNAILS = {
@@ -13,31 +15,65 @@ THUMBNAILS = {
     'web': 1200,
     'large': 2048
 }
+KEEP_EXIF = {'large'}  # Keep exif data on these sizes
+
+ORIENTATION_EXIF = 274  # Default
+# Lookup the right orientation exif tag
+for orientation in ExifTags.TAGS.keys():
+    if ExifTags.TAGS[orientation] == 'Orientation':
+        ORIENTATION_EXIF = orientation
+        break
 
 
 def random_string():
     return ''.join([random.choice(string.ascii_letters) for _ in range(6)])
 
 
+def read_rotation(img_data):
+    exif = dict(img_data._getexif().items())
+    img_orient_exif = exif[ORIENTATION_EXIF]
+    if img_orient_exif == 3:
+        return 180
+    elif img_orient_exif == 6:
+        return 270
+    elif img_orient_exif == 8:
+        return 90
+    return 0
+
+
 def generate_thumbnails(filename, thumbs_folder):
     base = basename(filename)
-    dir_name = dirname(filename)
     name, ext = splitext(base)
     _hash = random_string()
+    # Also add random to original
+    new_original = join(thumbs_folder, '%s-%s%s' % (name, _hash, ext))
+    shutil.move(filename, new_original)
     generated = {
-        # Also add random to original
-        'original': join(dir_name, '%s-%s%s' % (name, _hash, ext))
+        'original': new_original
     }
     for thumb_name, dim in THUMBNAILS.items():
-        orig = Image.open(filename)
         _hash = random_string()
         # I want each thumbnail have a different random string so you cannot
         # guess the other size from the URL
         out_name = join(thumbs_folder, '%s--%s-%s%s' % (name, thumb_name,
                                                         _hash, ext))
-        generated[thumb_name] = out_name
+
+        orig = Image.open(new_original)
+        rotation = read_rotation(orig)
         orig.thumbnail((dim, dim))
+        if thumb_name not in KEEP_EXIF:
+            # Only rotate those that don't have copied exif
+            if rotation:
+                orig = orig.rotate(rotation, expand=True)
+
         orig.save(out_name, format='JPEG', quality=85, progressive=True)
+        generated[thumb_name] = out_name
+        if thumb_name in KEEP_EXIF:
+            try:
+                piexif.transplant(new_original, out_name)
+            except ValueError:
+                # Original did not have EXIF to transplant
+                pass
     return generated
 
 
