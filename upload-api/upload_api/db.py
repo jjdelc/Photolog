@@ -20,6 +20,8 @@ class DB(object):
             '('
             '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
             '  name TEXT,'
+            '  filename TEXT,'
+            '  notes TEXT,'
             '  key TEXT,'
             '  original TEXT,'
             '  thumb TEXT,'
@@ -37,6 +39,7 @@ class DB(object):
             '  camera TEXT,'
             '  upload_date TEXT,'
             '  upload_time INTEGER,'
+            '  exif_read INTEGER,'
             '  date_taken TEXT'
             ');',
             'CREATE TABLE IF NOT EXISTS tags '

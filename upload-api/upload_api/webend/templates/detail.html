@@ -2,7 +2,13 @@
 {% block content %}
 <figure class="main-picture-detail">
 <img src="{{ picture.web }}"/>
-<figcaption>{{ picture.name }}</figcaption>
+<figcaption>
+    <o>{{ picture.year }}-{{ picture.month }}-{{ picture.day }}</o>
+    <p>
+    {{ picture.name }}
+    ({{ picture.width }}x{{ picture.height }}) - {{ picture.size /1024 }}KB
+    </p>
+</figcaption>
 </figure>
 
 <ul class="tag-list">
@@ -13,6 +19,12 @@
     </li>
 {% endfor %}
 </ul>
+
+<dl>
+<dt>Uploaded</dt>
+<dd>{{ picture.upload_date }}</dd>
+<dt>Camera</dt><dd>{{ picture.camera }}</dd>
+</dl>
 
 <dl>
 <dt><label for="link-original">Original</label></dt>

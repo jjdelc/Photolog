@@ -40,6 +40,8 @@ def generate_thumbnails(filename, thumbs_folder):
 def store_photo(db, key, name, s3_urls, tags, upload_date, exif):
     values = {
         'name': name,
+        'filename': name,
+        'notes': '',
         'key': key,
         'year': exif['year'],
         'month': exif['month'],
@@ -68,6 +70,7 @@ def read_exif(filename, upload_date):
     exif = exifread.process_file(open(filename, 'rb'))
     timestamp = None
     year, month, day = upload_date.year, upload_date.month, upload_date.day
+    exif_read = bool(exif)
     if 'EXIF DateTimeOriginal' in exif:
         timestamp = str(exif['EXIF DateTimeOriginal'])  # fmt='2015:12:04 00:50:53'
         year, month, day = timestamp.split(' ')[0].split(':')
@@ -84,5 +87,6 @@ def read_exif(filename, upload_date):
         'width': dims[0],
         'height': dims[1],
         'size': os.stat(filename).st_size,
+        'exif_read': exif_read
     }
 
