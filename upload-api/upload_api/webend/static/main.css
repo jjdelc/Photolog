@@ -3,6 +3,7 @@ background: white;
 font-family: 'Open-sans', sans-serif;
 margin: 0;
 padding: 0;
+color: #444;
 }
 .page-header {
 background: #D20000;
@@ -15,6 +16,10 @@ border-bottom: 2px solid rgba(0,0,0,0.25);
 font-size: 1rem;
 font-weight: 400;
 margin: 0;
+}
+.page-header h1 a {
+color: white;
+text-decoration: none;
 }
 .main-content {
 width: 90%;
@@ -76,4 +81,20 @@ display: block;
 margin: 0 auto;
 max-width: 100%;
 height: auto;
+}
+.main-picture-detail figcaption {
+font-size: 0.9rem;
+color: white;
+background: #333;
+padding: 0.5rem;
+display: flex;
+}
+.main-picture-detail figcaption p {
+margin: 0;
+flex: 1 0 auto;
+width: 50%;
+}
+.main-picture-detail .picture-meta {
+font-size: 0.7rem;
+color: #cccccc;
 }

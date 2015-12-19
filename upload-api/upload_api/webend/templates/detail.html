@@ -3,11 +3,12 @@
 <figure class="main-picture-detail">
 <img src="{{ picture.web }}"/>
 <figcaption>
-    <o>{{ picture.year }}-{{ picture.month }}-{{ picture.day }}</o>
     <p>
     {{ picture.name }}
-    ({{ picture.width }}x{{ picture.height }}) - {{ picture.size /1024 }}KB
+        <span class="picture-meta">({{ picture.width }}x{{ picture.height }})
+     - <abbr title="{{ picture.size }} bytes">{{ human_size }}</abbr></span>
     </p>
+    <o>{{ picture.year }}-{{ picture.month }}-{{ picture.day }}</o>
 </figcaption>
 </figure>
 
@@ -21,6 +22,8 @@
 </ul>
 
 <dl>
+<dt>Taken</dt>
+<dd>{{ picture.date_taken }}</dd>
 <dt>Uploaded</dt>
 <dd>{{ picture.upload_date }}</dd>
 <dt>Camera</dt><dd>{{ picture.camera }}</dd>

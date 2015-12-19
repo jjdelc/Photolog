@@ -12,12 +12,25 @@ app = Flask(__name__)
 PAGE_SIZE = 24
 
 
+def human_size(size):
+    size_name = ['B', 'KB', 'MB', 'GB']
+    i = int(math.floor(math.log(size, 1024)))
+    p = math.pow(1024, i)
+    s = round(size / p, 2)
+    if s > 0:
+        return '%s%s' % (s, size_name[i])
+    return '0B'
+
+
 def get_paginator(total, page_size, current):
     total_pages = math.ceil(total / page_size)
     next_page = current + 1 if current < total_pages else None
     prev_page = current - 1 if current > 1 else None
     adjacent_size = 2
-    adjacent_pages = range(current - adjacent_size, current + adjacent_size + 1)
+    page_start = current - adjacent_size
+    page_start = page_start if page_start > 1 else 1
+    page_end = page_start + 1 + adjacent_size * 2
+    adjacent_pages = range(page_start, page_end)
     adjacent = [x for x in adjacent_pages if 0 < x <= total_pages]
     return {
         'current': current,
@@ -60,6 +73,7 @@ def picture_detail(key):
     return render_template('detail.html', **{
         'picture': picture,
         'tags': tags,
+        'human_size': human_size(picture['size'])
     })
 
 
@@ -79,6 +93,7 @@ def view_tags(tag_list):
         'total': tagged_total,
     }
     return render_template('index.html', **ctx)
+
 
 def start():
     log.info('Starting WEB server')
