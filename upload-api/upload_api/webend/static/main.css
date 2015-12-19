@@ -37,6 +37,8 @@ align-content: flex-start;
 .photo-thumb-list li {
 flex: 0 1 auto;
 padding: 5px;
+display: flex;
+align-items: center;
 }
 .photo-thumb-list img {
 border: 1px solid #333333;
@@ -88,6 +90,8 @@ display: block;
 margin: 0 auto;
 max-width: 100%;
 height: auto;
+max-height: 700px;
+width: auto;
 }
 .main-picture-detail figcaption {
 font-size: 0.9rem;
