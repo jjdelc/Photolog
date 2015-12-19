@@ -41,12 +41,14 @@ def get_paginator(total, page_size, current):
     }
 
 
-def pictures_for_page(db, page_num, tags=None):
+def pictures_for_page(db, page_num, tags=None, year=None):
     offset, limit = (page_num - 1) * PAGE_SIZE, PAGE_SIZE
-    if not tags:
-        db_pics = list(db.get_pictures(offset, limit))
+    if tags:
+        db_pics = list(db.get_tagged_pictures(tags, limit, offset))
+    elif year:
+        db_pics = list(db.get_pictures_for_year(year, limit, offset))
     else:
-        db_pics = list(db.get_tagged_pictures(tags, offset, limit))
+        db_pics = list(db.get_pictures(limit, offset))
     return db_pics
 
 
@@ -57,11 +59,13 @@ def index():
     db_total = db.total_pictures()
     paginator = get_paginator(db_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
+    years = db.get_years()
     ctx = {
         'pictures': pictures,
         'total': db_total,
         'paginator': paginator,
         'all_tags': all_tags,
+        'years': years
     }
     return render_template('index.html', **ctx)
 
@@ -91,6 +95,23 @@ def view_tags(tag_list):
         'pictures': pictures,
         'paginator': paginator,
         'total': tagged_total,
+    }
+    return render_template('index.html', **ctx)
+
+
+@app.route('/date/<int:year>/')
+def view_year(year):
+    page = int(request.args.get('page', '1'))
+    pictures = pictures_for_page(db, page, tags=None, year=year)
+    tagged_total = db.total_for_year(year)
+    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    all_tags = db.get_tags()
+    ctx = {
+        'all_tags': all_tags,
+        'pictures': pictures,
+        'paginator': paginator,
+        'total': tagged_total,
+        'year': year,
     }
     return render_template('index.html', **ctx)
 

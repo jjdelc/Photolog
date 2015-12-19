@@ -11,6 +11,14 @@
 </ol>
 <ul class="tag-list">
     <li><a href="/">All</a></li>
+{% for year in years %}
+    <li>
+    <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
+    </li>
+{% endfor %}
+</ul>
+<ul class="tag-list">
+    <li><a href="/">All</a></li>
 {% for tag in all_tags %}
     <li>
     <a href="{{ url_for('view_tags', tag_list=tag) }}">{{ tag }}</a>

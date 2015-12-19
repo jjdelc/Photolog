@@ -74,6 +74,10 @@ class DB(object):
                  '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
     _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
     _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
+    _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
+    _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
+                             'upload_time DESC LIMIT ? OFFSET ?')
+    _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -103,11 +107,11 @@ class DB(object):
                 t_id = t['id']
                 conn.execute(self._tag_picture, [t_id, picture_id])
 
-    def get_pictures(self, offset, limit):
+    def get_pictures(self, limit, offset):
         with self._get_conn() as conn:
             return conn.execute(self._get_pictures, (limit, offset))
 
-    def get_tagged_pictures(self, tags, offset, limit):
+    def get_tagged_pictures(self, tags, limit, offset):
         with self._get_conn() as conn:
             tag_ids = [str(t['id'])
                        for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
@@ -157,3 +161,15 @@ class DB(object):
     def tags_for_picture(self, picture_id):
         with self._get_conn() as conn:
             return [t['name'] for t in conn.execute(self._pic_tags, [picture_id])]
+
+    def get_years(self):
+        with self._get_conn() as conn:
+            return [y['year'] for y in conn.execute(self._get_years)]
+
+    def get_pictures_for_year(self, year, limit, offset):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_pictures_by_year, (year, limit, offset))
+
+    def total_for_year(self, year):
+        with self._get_conn() as conn:
+            return conn.execute(self._total_for_year, [year]).fetchone()['count']

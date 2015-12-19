@@ -31,7 +31,11 @@ def random_string():
 
 
 def read_rotation(img_data):
-    exif = dict(img_data._getexif().items())
+    try:
+        exif = dict(img_data._getexif().items())
+    except ZeroDivisionError:
+        # Error reading Exif :(
+        return 0
     img_orient_exif = exif[ORIENTATION_EXIF]
     if img_orient_exif == 3:
         return 180
