@@ -48,7 +48,7 @@ def slugify(text):
     """
     Slugify inspired in Django's slugify
     """
-    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
+    text = unicodedata.normalize('NFKD', text)
     text = re.sub('[^\w\s-]', '', text).strip().lower()
     text = re.sub('[-\s]+', '-', text)
     return text
