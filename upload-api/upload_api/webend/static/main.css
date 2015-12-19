@@ -1,8 +1,26 @@
-html {
+html, body {
 background: white;
 font-family: 'Open-sans', sans-serif;
+margin: 0;
+padding: 0;
 }
-
+.page-header {
+background: #D20000;
+color: white;
+margin-bottom: 0.5rem;
+padding: 0.5rem;
+border-bottom: 2px solid rgba(0,0,0,0.25);
+}
+.page-header h1 {
+font-size: 1rem;
+font-weight: 400;
+margin: 0;
+}
+.main-content {
+width: 90%;
+margin: 0 auto;
+max-width: 100rem;
+}
 .photo-thumb-list {
 list-style-type: none;
 padding: 0;
