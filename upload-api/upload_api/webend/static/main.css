@@ -69,6 +69,7 @@ padding: 0;
 }
 .tag-list li {
 display: inline-block;
+margin: 0.25rem 0;
 }
 .tag-list a {
 display: block;
