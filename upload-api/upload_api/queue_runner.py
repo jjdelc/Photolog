@@ -20,6 +20,13 @@ def read_exif(db, settings, job):
     return job
 
 
+def generate_thumbs(db, settings, job):
+    filename = job_fname(job, settings)
+    thumbs = base.generate_thumbnails(filename, settings.THUMBS_FOLDER)
+    job['data']['thumbs'] = thumbs
+    return job
+
+
 def local_store(db, settings, job):
     upload_date = job['uploaded_at']
     exif = job['data']['exif']
@@ -31,19 +38,31 @@ def local_store(db, settings, job):
     return job
 
 
-def generate_thumbs(db, settings, job):
-    filename = job_fname(job, settings)
-    thumbs = base.generate_thumbnails(filename, settings.THUMBS_FOLDER)
-    job['data']['thumbs'] = thumbs
-    return job
-
-
 def s3_upload(db, settings, job):
     exif = job['data']['exif']
     thumbs = job['data']['thumbs']
     path = '%s/%s' % (exif['year'], exif['month'])
     s3_urls = s3.upload_thumbs(settings, thumbs, path)
     job['data']['s3_urls'] = s3_urls
+    return job
+
+
+def local_process(db, settings, job):
+    """
+    Collapses quick jobs so each picture doesn't get queued up in case of
+    long batches
+    """
+    filename = job_fname(job, settings)
+    base_file = os.path.basename(filename)
+    key = job['key']
+    log.info('Processing %s - Step: read_exif (%s)' % (key, base_file))
+    job = read_exif(db, settings, job)
+    log.info('Processing %s - Step: thumbs (%s)' % (key, base_file))
+    job = generate_thumbs(db, settings, job)
+    log.info('Processing %s - Step: s3_upload (%s)' % (key, base_file))
+    job = s3_upload(db, settings, job)
+    log.info('Processing %s - Step: local_store (%s)' % (key, base_file))
+    job = local_store(db, settings, job)
     return job
 
 
@@ -74,10 +93,7 @@ def finish_job(db, settings, job):
 
 
 steps = {  # Step function, Next job
-    'read_exif': (read_exif, 'thumbs'),
-    'thumbs': (generate_thumbs, 's3_upload'),
-    's3_upload': (s3_upload, 'local_store'),
-    'local_store': (local_store, 'flickr'),
+    'upload_and_store': (local_process, 'flickr'),
     'flickr': (flickr_upload, 'gphotos'),
     'gphotos': (gphotos_upload, 'finish'),
     'finish': (finish_job, None)
@@ -86,7 +102,7 @@ steps = {  # Step function, Next job
 
 def process_task(db, settings, job):
     step = job['step']
-    filename = os.path.join(settings.UPLOAD_FOLDER, job['filename'])
+    filename = job_fname(job, settings)
     base_file = os.path.basename(filename)
     key = job['key']
 

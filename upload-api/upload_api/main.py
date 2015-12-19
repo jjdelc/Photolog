@@ -70,7 +70,7 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags):
         'tags': tags,
         'original_filename': uploaded_file.filename,
         'uploaded_at': datetime.now(),
-        'step': 'read_exif',  # read_exif is the first thing to do to the pics,
+        'step': 'upload_and_store',  # First thing to do to the pics,
         'data': {},  # Store additional parameters,
         'attempt': 0,  # Records how many times this step has been attempted
     })
