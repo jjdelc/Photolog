@@ -36,6 +36,7 @@ class DB(object):
             '  size INTEGER,'
             '  camera TEXT,'
             '  upload_date TEXT,'
+            '  upload_time INTEGER,'
             '  date_taken TEXT'
             ');',
             'CREATE TABLE IF NOT EXISTS tags '
@@ -53,11 +54,11 @@ class DB(object):
             ');'
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
-    _get_pictures = 'SELECT * FROM pictures LIMIT ? OFFSET ?'
+    _get_pictures = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
                             '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
-                            'LIMIT ? OFFSET ?')
+                            ' ORDER BY upload_time DESC LIMIT ? OFFSET ?')
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _get_tags = 'SELECT name FROM tags'
     _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'

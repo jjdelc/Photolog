@@ -2,6 +2,7 @@ import os
 import random
 import string
 import exifread
+from time import time
 from PIL import Image
 from os.path import splitext, basename, join
 
@@ -45,6 +46,7 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif):
         'day': exif['day'],
         'date_taken': exif['timestamp'],
         'upload_date': str(upload_date),
+        'upload_time': int(time() * 100),
         'camera': exif['camera'],
         'width': exif['width'],
         'height': exif['height'],
