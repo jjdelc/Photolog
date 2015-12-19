@@ -4,7 +4,7 @@ import string
 import exifread
 from time import time
 from PIL import Image
-from os.path import splitext, basename, join
+from os.path import splitext, basename, join, dirname
 
 
 THUMBNAILS = {
@@ -20,17 +20,21 @@ def random_string():
 
 
 def generate_thumbnails(filename, thumbs_folder):
-    generated = {
-        'original': filename
-    }
     base = basename(filename)
+    dir_name = dirname(filename)
     name, ext = splitext(base)
+    _hash = random_string()
+    generated = {
+        # Also add random to original
+        'original': join(dir_name, '%s-%s%s' % (name, _hash, ext))
+    }
     for thumb_name, dim in THUMBNAILS.items():
         orig = Image.open(filename)
         _hash = random_string()
         # I want each thumbnail have a different random string so you cannot
         # guess the other size from the URL
-        out_name = join(thumbs_folder, '%s--%s-%s%s' % (name, thumb_name, _hash, ext))
+        out_name = join(thumbs_folder, '%s--%s-%s%s' % (name, thumb_name,
+                                                        _hash, ext))
         generated[thumb_name] = out_name
         orig.thumbnail((dim, dim))
         orig.save(out_name, format='JPEG', quality=85, progressive=True)
@@ -72,7 +76,8 @@ def read_exif(filename, upload_date):
     year, month, day = upload_date.year, upload_date.month, upload_date.day
     exif_read = bool(exif)
     if 'EXIF DateTimeOriginal' in exif:
-        timestamp = str(exif['EXIF DateTimeOriginal'])  # fmt='2015:12:04 00:50:53'
+        timestamp = str(exif['EXIF DateTimeOriginal'])
+        # fmt='2015:12:04 00:50:53'
         year, month, day = timestamp.split(' ')[0].split(':')
     dims = Image.open(filename).size
     brand = str(exif.get('Image Make', 'Unknown camera'))
