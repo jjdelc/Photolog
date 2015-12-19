@@ -68,7 +68,8 @@ def gphotos_upload(db, settings, job):
 
 def finish_job(db, settings, job):
     filename = job_fname(job, settings)
-    base.delete_file(filename)
+    thumbs = job['data']['thumbs']
+    base.delete_file(filename, thumbs)
     return None
 
 

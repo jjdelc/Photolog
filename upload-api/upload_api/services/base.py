@@ -17,6 +17,7 @@ THUMBNAILS = {
 }
 KEEP_EXIF = {'large'}  # Keep exif data on these sizes
 
+THUMB_QUALITY = 85
 ORIENTATION_EXIF = 274  # Default
 # Lookup the right orientation exif tag
 for orientation in ExifTags.TAGS.keys():
@@ -47,7 +48,7 @@ def generate_thumbnails(filename, thumbs_folder):
     _hash = random_string()
     # Also add random to original
     new_original = join(thumbs_folder, '%s-%s%s' % (name, _hash, ext))
-    shutil.move(filename, new_original)
+    shutil.copyfile(filename, new_original)
     generated = {
         'original': new_original
     }
@@ -62,11 +63,11 @@ def generate_thumbnails(filename, thumbs_folder):
         rotation = read_rotation(orig)
         orig.thumbnail((dim, dim))
         if thumb_name not in KEEP_EXIF:
-            # Only rotate those that don't have copied exif
-            if rotation:
-                orig = orig.rotate(rotation, expand=True)
+            # Only rotate those that don't have exif copied
+            orig = orig.rotate(rotation, expand=True)
 
-        orig.save(out_name, format='JPEG', quality=85, progressive=True)
+        orig.save(out_name, format='JPEG', quality=THUMB_QUALITY,
+            progressive=True)
         generated[thumb_name] = out_name
         if thumb_name in KEEP_EXIF:
             try:
@@ -102,8 +103,10 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif):
     db.add_picture(values, tags)
 
 
-def delete_file(filename):
-    pass
+def delete_file(filename, thumbs):
+    os.remove(filename)
+    for thumb_file in thumbs.values():
+        os.remove(thumb_file)
 
 
 def read_exif(filename, upload_date):
