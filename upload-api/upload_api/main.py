@@ -86,7 +86,8 @@ def add_photo():
         }), 400
 
     tags = request.form.get('tags', '')
-    tags = [t.strip().lower() for t in tags.split(',')]
+    tags = {t.strip().lower() for t in tags.split(',')}
+    tags = [t for t in tags if t]  # Strip empty
     filename = _add_photo(settings, queue, uploaded_file,
                           uploaded_file.filename, tags)
     log.info('Queued file: %s' % filename)
