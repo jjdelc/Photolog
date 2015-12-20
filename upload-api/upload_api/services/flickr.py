@@ -3,6 +3,10 @@ import flickrapi.shorturl
 
 """
 How to obtain the token:
+Create an app from http://www.flickr.com/services/api/keys/ and get keys and
+secret
+Then:
+
 import flickrapi
 api = flickrapi.FlickrAPI(settings.FLICKR_API_KEY, settings.FLICKR_API_SECRET)
 api.get_request_token(oauth_callback='oob')
@@ -28,7 +32,8 @@ def upload(settings, title, filename, tags):
         is_friend=0,
         title=title,
     )
-    if dict(uploaded.items()).get('stat') == 'ok':
-        photo_id = list(uploaded[0].iter())[0].text
+    stat = dict(uploaded.items()).get('stat')
+    if stat == 'ok':
+        photo_id = uploaded.find('photoid').text
         return flickrapi.shorturl.url(photo_id), photo_id
     return None, None
