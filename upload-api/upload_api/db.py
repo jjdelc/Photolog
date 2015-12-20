@@ -193,7 +193,7 @@ class TokensDB(BaseDB):
             '  expires INTEGER'
             ');']
     _save_token = ('INSERT INTO tokens (service, access_token, token_type, '
-                   'refresh_token, expires) VALUES (?)')
+                   'refresh_token, expires) VALUES (?,?,?,?,?)')
     _update_token = ('UPDATE tokens SET access_token=?, token_type=?, '
                      'expires=? WHERE service=?')
     _get_token = 'SELECT access_token FROM tokens WHERE service = ?'

@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlencode, urlunparse
 
 import requests
@@ -66,15 +67,21 @@ def exchange_token(tokens, client_id, secret, code):
         'client_id': client_id,
         'client_secret': secret,
         'grant_type': 'authorization_code',
-        'redirect_uri': OOB_URL
+        'redirect_uri': OOB_URL,
+        'expires_in': 0
     }).json()
-    tokens.save_token(
-        SERVICE,
-        response['access_token'],
-        response['refresh_token'],
-        time() + response['expires_in']
-    )
-    return response['access_token']
+    if 'access_token' in response:
+        tokens.save_token(
+            SERVICE,
+            response['access_token'],
+            response['token_type'],
+            response['refresh_token'],
+            time() + response['expires_in']
+        )
+        return response['access_token']
+    else:
+        # Some error
+        raise ValueError('Error negotiating %s token: %s' % (SERVICE, response))
 
 
 def refresh_access_token(tokens, client_id, secret, refresh_token):
@@ -87,10 +94,14 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
     tokens.update_token(
         SERVICE,
         response['access_token'],
-        response['access_token'],
+        response['token_type'],
         time() + response['expires_in']
     )
-    return response['access_token']
+    if 'access_token' in response:
+        return response['access_token']
+    else:
+        # Some error
+        raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
 
 
 def do_upload(settings, filename, name, access_token, token_type):
@@ -98,16 +109,16 @@ def do_upload(settings, filename, name, access_token, token_type):
         'GData-Version': 2,
         'Slug': name,
         'Content-Type': 'image/jpeg',
-        'Authorization': '%s %s' % (token_type, access_token)
-
+        'Authorization': '%s %s' % (token_type, access_token),
+        'Content-Length': os.stat(filename).st_size,
+        'MIME-version': '1.0'
     }
-    response = requests.post(PICASA_ENDPOINT % {
+    session = requests.Session()
+    request = requests.Request('POST', PICASA_ENDPOINT % {
         'user': settings.GPHOTOS_USER
-    }, files={
-        'photo': open(filename, 'rb'),
-
-    }, headers=headers)
-    return response
+    }, data=open(filename, 'rb'), headers=headers)
+    response = session.send(request.prepare())
+    return response.text
 
 
 def upload(settings, filename, name):
@@ -116,13 +127,20 @@ def upload(settings, filename, name):
     """
     tokens = TokensDB(settings.DB_FILE)
     token = tokens.get_token(SERVICE)
-    access_token = token['access_token']
-    if tokens.needs_refresh(SERVICE, access_token):
-        access_token = refresh_access_token(tokens,
+    if token:
+        access_token = token['access_token']
+        if tokens.needs_refresh(SERVICE, access_token):
+            access_token = refresh_access_token(tokens,
+                settings.GPHOTOS_CLIENT_ID,
+                settings.GPHOTOS_SECRET,
+                token['refresh_token']
+            )
+    else:
+        access_token = exchange_token(tokens,
             settings.GPHOTOS_CLIENT_ID,
             settings.GPHOTOS_SECRET,
-            token['refresh_token']
-        )
-    response = do_upload(filename, token['access_token'], token['token_type'])
+            settings.GPHOTOS_ACCESS_CODE)
+
+    response = do_upload(filename, access_token, token['token_type'])
     print(response)
     return filename
