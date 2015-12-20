@@ -6,7 +6,7 @@ from . import queue_logger as log, settings_file
 from .db import DB
 from .squeue import SqliteQueue
 from .services import s3, gphotos, flickr, base
-from .settings import Setting
+from .settings import Settings
 
 
 class ProcessingError(Exception): pass
@@ -173,7 +173,7 @@ def daemon(db, settings, queue):
 
 
 def start_daemon():
-    settings = Setting.load(settings_file)
+    settings = Settings.load(settings_file)
     db = DB(settings.DB_FILE)
     queue = SqliteQueue(settings.DB_FILE)
     ensure_thumbs_folder(settings)

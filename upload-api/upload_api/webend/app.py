@@ -3,9 +3,9 @@ from flask import Flask, render_template, request
 
 from upload_api import web_logger as log, settings_file
 from upload_api.db import DB
-from upload_api.settings import Setting
+from upload_api.settings import Settings
 
-settings = Setting.load(settings_file)
+settings = Settings.load(settings_file)
 db = DB(settings.DB_FILE)
 app = Flask(__name__)
 

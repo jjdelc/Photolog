@@ -2,7 +2,7 @@ import os
 import yaml
 
 
-class Setting(object):
+class Settings(object):
     PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
     DEBUG = True
     DB_FILE = os.path.join(PROJECT_DIR, 'photos.db')

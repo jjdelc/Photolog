@@ -10,11 +10,11 @@ from werkzeug.utils import secure_filename
 
 from .squeue import SqliteQueue
 from . import api_logger as log, settings_file
-from .settings import Setting
+from .settings import Settings
 from .services.base import random_string
 
 ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
-settings = Setting.load(settings_file)
+settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
 
 app = Flask(__name__)
