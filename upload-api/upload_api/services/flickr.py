@@ -32,6 +32,9 @@ def upload(settings, title, filename, tags):
         is_friend=0,
         title=title,
     )
+    # Understanding the response
+    # https://secure.flickr.com/services/api/upload.api.html
+    # https://secure.flickr.com/services/api/response.rest.html
     stat = dict(uploaded.items()).get('stat')
     if stat == 'ok':
         photo_id = uploaded.find('photoid').text
