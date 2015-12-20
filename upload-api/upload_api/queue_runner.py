@@ -1,4 +1,5 @@
 import os
+import json
 import traceback
 
 from . import queue_logger as log, settings_file
@@ -6,6 +7,9 @@ from .db import DB
 from .squeue import SqliteQueue
 from .services import s3, gphotos, flickr, base
 from .settings import Setting
+
+
+class ProcessingError(Exception): pass
 
 
 def job_fname(job, settings):
@@ -69,10 +73,16 @@ def local_process(db, settings, job):
 def flickr_upload(db, settings, job):
     tags = job['tags']
     key = job['key']
-    filename = job_fname(job, settings)
-    flickr_url = flickr.upload(filename, tags)
-    db.update_picture(key, 'flickr', flickr_url)
-    job['data']['flickr_url'] = flickr_url
+    full_filename = job_fname(job, settings)
+    flickr_url, photo_id = flickr.upload(settings, job['filename'],
+        full_filename, tags)
+    if flickr_url:
+        db.update_picture(key, 'flickr', json.dumps({
+            'url': flickr_url,
+            'id': photo_id
+        }))
+    else:
+        raise ProcessingError('Error uploading to Flickr')
     return job
 
 
@@ -136,6 +146,16 @@ def daemon(db, settings, queue):
             queue.append(job)
             log.info('Daemon interrupted')
             daemon_started = False
+        except ProcessingError as error:
+            # This is an error that we raised ourselves....
+            # Should we try again?
+            if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
+                job['attempt'] += 1
+                queue.append(job)
+            else:
+                # What should it do? Send a notification, record an error?
+                # Don't loose the task
+                queue.append_bad(job)
         except Exception as exc:
             traceback.print_exc(exc)
             if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
@@ -145,7 +165,6 @@ def daemon(db, settings, queue):
                 # What should it do? Send a notification, record an error?
                 # Don't loose the task
                 queue.append_bad(job)
-                pass
         else:
             if next_job:
                 queue.append(next_job)
