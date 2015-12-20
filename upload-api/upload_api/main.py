@@ -33,8 +33,8 @@ def unique_filename(filename, salt, path):
     name, ext = os.path.splitext(filename)
     final_filename = '%s-%s%s' % (name, salt, ext)
     while final_filename.lower() in existing:
-        _hash = random_string()
-        final_filename = '%s-%s-%s%s' % (name, salt, _hash, ext)
+        secret = random_string()
+        final_filename = '%s-%s-%s%s' % (name, salt, secret, ext)
     return final_filename
 
 

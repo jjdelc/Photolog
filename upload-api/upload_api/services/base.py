@@ -49,19 +49,19 @@ def read_rotation(img_data):
 def generate_thumbnails(filename, thumbs_folder):
     base = basename(filename)
     name, ext = splitext(base)
-    _hash = random_string()
+    secret = random_string()
     # Also add random to original
-    new_original = join(thumbs_folder, '%s-%s%s' % (name, _hash, ext))
+    new_original = join(thumbs_folder, '%s-%s%s' % (name, secret, ext))
     shutil.copyfile(filename, new_original)
     generated = {
         'original': new_original
     }
     for thumb_name, dim in THUMBNAILS.items():
-        _hash = random_string()
+        secret = random_string()
         # I want each thumbnail have a different random string so you cannot
         # guess the other size from the URL
         out_name = join(thumbs_folder, '%s--%s-%s%s' % (name, thumb_name,
-                                                        _hash, ext))
+                                                        secret, ext))
 
         orig = Image.open(new_original)
         rotation = read_rotation(orig)
