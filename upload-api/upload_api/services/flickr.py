@@ -26,7 +26,7 @@ def upload(settings, title, filename, tags):
     api.get_access_token(settings.FLICKR_APP_TOKEN)
     uploaded = api.upload(
         filename=filename,
-        tags=tags,
+        tags=' '.join(tags),
         is_public=0,
         is_family=0,
         is_friend=0,
