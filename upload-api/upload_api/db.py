@@ -1,4 +1,6 @@
-import os, sqlite3
+import os
+import sqlite3
+from time import time
 
 try:
     from _thread import get_ident
@@ -14,7 +16,26 @@ def dict_factory(cursor, row):
     return d
 
 
-class DB(object):
+class BaseDB(object):
+    _create = []
+
+    def __init__(self, path):
+        self.path = os.path.abspath(path)
+        self._connection_cache = {}
+        with self._get_conn() as conn:
+            for table in self._create:
+                conn.execute(table)
+
+    def _get_conn(self):
+        _id = get_ident()
+        if _id not in self._connection_cache:
+            conn = sqlite3.Connection(self.path, timeout=60)
+            conn.row_factory = dict_factory
+            self._connection_cache[_id] = conn
+        return self._connection_cache[_id]
+
+
+class DB(BaseDB):
     _create = (
             'CREATE TABLE IF NOT EXISTS pictures '
             '('
@@ -78,21 +99,6 @@ class DB(object):
     _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
                              'upload_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
-
-    def __init__(self, path):
-        self.path = os.path.abspath(path)
-        self._connection_cache = {}
-        with self._get_conn() as conn:
-            for table in self._create:
-                conn.execute(table)
-
-    def _get_conn(self):
-        _id = get_ident()
-        if _id not in self._connection_cache:
-            conn = sqlite3.Connection(self.path, timeout=60)
-            conn.row_factory = dict_factory
-            self._connection_cache[_id] = conn
-        return self._connection_cache[_id]
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
@@ -173,3 +179,42 @@ class DB(object):
     def total_for_year(self, year):
         with self._get_conn() as conn:
             return conn.execute(self._total_for_year, [year]).fetchone()['count']
+
+
+class TokensDB(BaseDB):
+    EXPIRE_WINDOW = 60 * 60  # 1hr
+    _create = ['CREATE TABLE IF NOT EXISTS tokens '
+            '('
+            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
+            '  service TEXT,'
+            '  token_type TEXT,'
+            '  access_token TEXT,'
+            '  refresh_token TEXT,'
+            '  expires INTEGER'
+            ');']
+    _save_token = ('INSERT INTO tokens (service, access_token, token_type, '
+                   'refresh_token, expires) VALUES (?)')
+    _update_token = ('UPDATE tokens SET access_token=?, token_type=?, '
+                     'expires=? WHERE service=?')
+    _get_token = 'SELECT access_token FROM tokens WHERE service = ?'
+    _get_expires = 'SELECT access_token FROM tokens WHERE service = ? AND token = ?'
+
+    def save_token(self, service, token, token_type, refresh_token, expires):
+        with self._get_conn() as conn:
+            conn.execute(self._save_token, [service, token, token_type,
+                                            refresh_token, expires])
+
+    def update_token(self, service, token, token_type, expires):
+        with self._get_conn() as conn:
+            conn.execute(self._update_token, [token, token_type, expires,
+                                              service])
+
+    def needs_refresh(self, service, token):
+        with self._get_conn() as conn:
+            response = conn.execute(self._get_expires, [service, token]).fetchone()
+            expires = response['expires']
+            return expires > (time() - self.EXPIRE_WINDOW)
+
+    def get_token(self, service):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_token, [service]).fetchone()
