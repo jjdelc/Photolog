@@ -89,9 +89,10 @@ def flickr_upload(db, settings, job):
 def gphotos_upload(db, settings, job):
     key = job['key']
     filename = job_fname(job, settings)
-    gphotos_url = gphotos.upload(filename)
-    db.update_picture(key, 'gphotos', gphotos_url)
-    job['data']['gphotos_url'] = gphotos_url
+    gphotos_data = gphotos.upload(settings, filename, job['filename'])
+    db.update_picture(key, 'gphotos', json.dump({
+        'xml': gphotos_data
+    }))
     return job
 
 

@@ -1,8 +1,8 @@
 import os
+from time import time
 from urllib.parse import urlencode, urlunparse
 
 import requests
-from time import time
 from upload_api.db import TokensDB
 
 """
@@ -24,8 +24,8 @@ Copy the provided code as the GPHOTOS_ACCESS_CODE setting.
 
 https://www.googleapis.com/oauth2/v4/token
 
-code=4/v6xr77ewYqhvHSyW6UJ1w7jKwAzu&
-client_id=8819981768.apps.googleusercontent.com&
+code=YOUR_CODE
+client_id=YOUR_CLIENT&
 client_secret=your_client_secret&
 redirect_uri=https://oauth2-login-demo.appspot.com/code&
 grant_type=authorization_code
@@ -36,7 +36,7 @@ SERVICE = 'gphotos'
 EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
 OOB_URL = "urn:ietf:wg:oauth:2.0:oob"
 CODE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
-PICASA_ENDPOINT = "https://picasaweb.google.com/data/feed/api/user/%(user)s/default"
+PICASA_ENDPOINT = "https://picasaweb.google.com/data/feed/api/user/default"
 
 
 def get_access_code(client_id):
@@ -114,9 +114,9 @@ def do_upload(settings, filename, name, access_token, token_type):
         'MIME-version': '1.0'
     }
     session = requests.Session()
-    request = requests.Request('POST', PICASA_ENDPOINT % {
-        'user': settings.GPHOTOS_USER
-    }, data=open(filename, 'rb'), headers=headers)
+    # Uploads to "Drop Box" album
+    request = requests.Request('POST', PICASA_ENDPOINT,
+        data=open(filename, 'rb'), headers=headers)
     response = session.send(request.prepare())
     return response.text
 
@@ -141,6 +141,4 @@ def upload(settings, filename, name):
             settings.GPHOTOS_SECRET,
             settings.GPHOTOS_ACCESS_CODE)
 
-    response = do_upload(filename, access_token, token['token_type'])
-    print(response)
-    return filename
+    return do_upload(filename, access_token, token['token_type'])
