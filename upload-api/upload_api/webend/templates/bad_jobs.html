@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<table class="bad-jobs">
+<tbody>
+{% for job in bad_jobs %}
+<tr>
+<td>{{ job }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

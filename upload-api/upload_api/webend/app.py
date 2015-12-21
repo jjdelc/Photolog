@@ -4,9 +4,11 @@ from flask import Flask, render_template, request
 from upload_api import web_logger as log, settings_file
 from upload_api.db import DB
 from upload_api.settings import Settings
+from upload_api.squeue import SqliteQueue
 
 settings = Settings.load(settings_file)
 db = DB(settings.DB_FILE)
+queue = SqliteQueue(settings.DB_FILE)
 app = Flask(__name__)
 
 PAGE_SIZE = 24
@@ -114,6 +116,14 @@ def view_year(year):
         'year': year,
     }
     return render_template('index.html', **ctx)
+
+
+@app.route('/bad_jobs/')
+def bad_jobs():
+    bad_jobs = queue.get_bad_jobs()
+    return render_template('bad_jobs.html', **{
+        'bad_jobs': bad_jobs
+    })
 
 
 def start():

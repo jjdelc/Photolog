@@ -28,6 +28,7 @@ class SqliteQueue(object):
     _iterate = 'SELECT id, item FROM queue'
     _append = 'INSERT INTO queue (item) VALUES (?)'
     _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
+    _bad_jobs = 'SELECT item FROM bad_jobs ORDER BY id DESC LIMIT ?'
     _write_lock = 'BEGIN IMMEDIATE'
     _popleft_get = (
             'SELECT id, item FROM queue '
@@ -72,6 +73,11 @@ class SqliteQueue(object):
         obj_buffer = memoryview(dumps(obj, 2))
         with self._get_conn() as conn:
             conn.execute(self._append_bad, (obj_buffer,))
+
+    def get_bad_jobs(self, limit=20):
+        with self._get_conn() as conn:
+            return [loads(obj_buffer[0])
+                    for obj_buffer in conn.execute(self._bad_jobs, [limit])]
 
     def popleft(self, sleep_wait=True):
         keep_pooling = True
