@@ -1,4 +1,5 @@
 import math
+import json
 from flask import Flask, render_template, request
 
 from upload_api import web_logger as log, settings_file
@@ -80,6 +81,14 @@ def picture_detail(key):
         'picture': picture,
         'tags': tags,
         'human_size': human_size(picture['size'])
+    })
+
+
+@app.route('/photo/<string:key>/blob/')
+def picture_detail_blob(key):
+    picture = db.get_picture(key)
+    return render_template('detail_blob.html', **{
+        'blob': json.dumps(picture, indent=2),
     })
 
 
