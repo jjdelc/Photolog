@@ -17,7 +17,7 @@ print(auth_url)
 # Pasete this in browser and put in settings
 https://www.flickr.com/services/oauth/authorize?oauth_token=xxxxxx&perms=write
 
-api.get_access_token(settings.FLICKR_APP_VERIFIER)
+api.get_access_token(VERIFIER_CODE)
 Store the following settings
 FLICKR_APP_TOKEN = api.flickr_oauth.oauth.client.resource_owner_key
 FLICKR_APP_SECRET = api.flickr_oauth.oauth.client.resource_owner_secret
