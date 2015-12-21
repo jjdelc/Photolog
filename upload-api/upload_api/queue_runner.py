@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import traceback
 
@@ -7,9 +8,6 @@ from .db import DB
 from .squeue import SqliteQueue
 from .services import s3, gphotos, flickr, base
 from .settings import Settings
-
-
-class ProcessingError(Exception): pass
 
 
 def job_fname(job, settings):
@@ -76,13 +74,10 @@ def flickr_upload(db, settings, job):
     full_filename = job_fname(job, settings)
     flickr_url, photo_id = flickr.upload(settings, job['filename'],
         full_filename, tags)
-    if flickr_url:
-        db.update_picture(key, 'flickr', json.dumps({
-            'url': flickr_url,
-            'id': photo_id
-        }))
-    else:
-        raise ProcessingError('Error uploading to Flickr')
+    db.update_picture(key, 'flickr', json.dumps({
+        'url': flickr_url,
+        'id': photo_id
+    }))
     return job
 
 
@@ -147,24 +142,17 @@ def daemon(db, settings, queue):
             queue.append(job)
             log.info('Daemon interrupted')
             daemon_started = False
-        except ProcessingError as error:
-            # This is an error that we raised ourselves....
-            # Should we try again?
-            if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
-                job['attempt'] += 1
-                queue.append(job)
-            else:
-                # What should it do? Send a notification, record an error?
-                # Don't loose the task
-                queue.append_bad(job)
         except Exception as exc:
-            traceback.print_exc(exc)
+            ex_type, ex, tb = sys.exc_info()
+            print(sys.exc_info())
+            traceback.print_tb(tb)
             if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
                 job['attempt'] += 1
                 queue.append(job)
             else:
                 # What should it do? Send a notification, record an error?
                 # Don't loose the task
+                log.info('Adding job %s to bad jobs' % job['key'])
                 queue.append_bad(job)
         else:
             if next_job:

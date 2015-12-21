@@ -197,7 +197,7 @@ class TokensDB(BaseDB):
     _update_token = ('UPDATE tokens SET access_token=?, token_type=?, '
                      'expires=? WHERE service=?')
     _get_token = 'SELECT access_token FROM tokens WHERE service = ?'
-    _get_expires = 'SELECT access_token FROM tokens WHERE service = ? AND token = ?'
+    _get_expires = 'SELECT expires FROM tokens WHERE service = ? AND access_token = ?'
 
     def save_token(self, service, token, token_type, refresh_token, expires):
         with self._get_conn() as conn:
