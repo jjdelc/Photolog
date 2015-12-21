@@ -8,7 +8,6 @@ color: #444;
 .page-header {
 background: #D20000;
 color: white;
-margin-bottom: 0.5rem;
 padding: 0.5rem;
 border-bottom: 2px solid rgba(0,0,0,0.25);
 }
@@ -28,7 +27,7 @@ max-width: 100rem;
 .photo-thumb-list {
 list-style-type: none;
 padding: 0;
-margin: 0;
+margin: 0.5rem 0;
 display: flex;
 flex-wrap: wrap;
 justify-content: flex-start;
