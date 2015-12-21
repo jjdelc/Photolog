@@ -144,7 +144,6 @@ def daemon(db, settings, queue):
             log.info('Daemon interrupted')
             daemon_started = False
         except Exception as exc:
-            raise
             ex_type, ex, tb = sys.exc_info()
             traceback.print_tb(tb)
             if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
