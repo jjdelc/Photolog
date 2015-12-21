@@ -78,6 +78,7 @@ def flickr_upload(db, settings, job):
         'url': flickr_url,
         'id': photo_id
     }))
+    log.info("Uploaded %s to Flickr" % key)
     return job
 
 
@@ -88,6 +89,7 @@ def gphotos_upload(db, settings, job):
     db.update_picture(key, 'gphotos', json.dumps({
         'xml': gphotos_data
     }))
+    log.info("Uploaded %s to Gphotos" % key)
     return job
 
 

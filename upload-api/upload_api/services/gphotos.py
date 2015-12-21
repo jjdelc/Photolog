@@ -119,7 +119,10 @@ def do_upload(settings, filename, name, access_token, token_type):
     request = requests.Request('POST', PICASA_ENDPOINT,
         data=open(filename, 'rb'), headers=headers)
     response = session.send(request.prepare())
+    if response.status_code > 300:
+        raise ValueError(response.text)
     return response.text
+
 
 
 def upload(settings, filename, name):

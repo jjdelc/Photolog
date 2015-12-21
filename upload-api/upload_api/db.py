@@ -182,7 +182,7 @@ class DB(BaseDB):
 
 
 class TokensDB(BaseDB):
-    EXPIRE_WINDOW = 60 * 60  # 1hr
+    EXPIRE_WINDOW = 60 * 30  # Half hour
     _create = ['CREATE TABLE IF NOT EXISTS tokens '
             '('
             '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
@@ -213,7 +213,7 @@ class TokensDB(BaseDB):
         with self._get_conn() as conn:
             response = conn.execute(self._get_expires, [service, token]).fetchone()
             expires = response['expires']
-            return expires > (time() - self.EXPIRE_WINDOW)
+            return (time() - self.EXPIRE_WINDOW) > expires
 
     def get_token(self, service):
         with self._get_conn() as conn:
