@@ -13,16 +13,17 @@
 </figure>
 
 <section class="extra-info">
-<ul class="tag-list">
-    <li><a href="/">All</a></li>
+
+
+<dl>
+<dt>Tagged</dt>
+<dd><ul class="tag-list">
 {% for tag in tags %}
     <li>
     <a href="{{ url_for('view_tags', tag_list=tag) }}">{{ tag }}</a>
     </li>
 {% endfor %}
-</ul>
-
-<dl>
+</ul></dd>
 <dt>Taken</dt>
 <dd>{{ picture.date_taken }}</dd>
 <dt>Uploaded</dt>
