@@ -59,7 +59,7 @@ def filename_for_file(uploaded_file, filename, path):
     return unique_filename(secure_filename(filename), _crc, path)
 
 
-def _add_photo(_settings, _queue, uploaded_file, base_filename, tags):
+def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip):
     filename = filename_for_file(uploaded_file, base_filename,
                                  _settings.UPLOAD_FOLDER)
 
@@ -73,6 +73,7 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags):
         'step': 'upload_and_store',  # First thing to do to the pics,
         'data': {},  # Store additional parameters,
         'attempt': 0,  # Records how many times this step has been attempted
+        'skip': skip,
     })
     return filename
 
@@ -99,9 +100,11 @@ def add_photo():
 
     tags = request.form.get('tags', '')
     tags = {slugify(t) for t in tags.split(',')}
+    skip = request.form.get('skip', '')
+    skip = {slugify(t) for t in skip.split(',')}
     tags = [t for t in tags if t]  # Strip empty
     filename = _add_photo(settings, queue, uploaded_file,
-                          uploaded_file.filename, tags)
+                          uploaded_file.filename, tags, skip)
     log.info('Queued file: %s' % filename)
     return '', 201
 

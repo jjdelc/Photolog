@@ -113,6 +113,9 @@ def process_task(db, settings, job):
     filename = job_fname(job, settings)
     base_file = os.path.basename(filename)
     key = job['key']
+    skip = job['skip']
+    if step in skip:
+        return job
 
     log.info('Processing %s - Step: %s (%s)' % (key, step, base_file))
     if job['attempt'] > 0:
