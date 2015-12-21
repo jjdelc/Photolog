@@ -144,7 +144,7 @@ class DB(BaseDB):
 
     def get_tags(self):
         with self._get_conn() as conn:
-            return {r['name'] for r in conn.execute(self._get_tags)}
+            return sorted({r['name'] for r in conn.execute(self._get_tags)})
 
     def add_tag(self, name):
         with self._get_conn() as conn:
