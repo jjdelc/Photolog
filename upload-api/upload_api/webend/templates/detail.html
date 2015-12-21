@@ -12,6 +12,7 @@
 </figcaption>
 </figure>
 
+<section class="extra-info">
 <ul class="tag-list">
     <li><a href="/">All</a></li>
 {% for tag in tags %}
@@ -29,7 +30,7 @@
 <dt>Camera</dt><dd>{{ picture.camera }}</dd>
 </dl>
 
-<dl>
+<dl class="permalinks">
 <dt><label for="link-original">Large</label></dt>
 <dd><input id="link-original" class="permalink" readonly value="{{ picture.large }}">
 <a class="fa fa-chain permalink-link" href="{{ picture.large }}"></a></dd>
@@ -43,5 +44,23 @@
 <dd><input id="link-original" class="permalink" readonly value="{{ picture.medium }}">
 <a class="fa fa-chain permalink-link" href="{{ picture.medium }}"></a></dd>
 </dl>
+
+<dl>
+<dt>Flickr</dt>
+{% if flickr.id %}
+<dd><a href="{{ flickr.url }}">{{ flickr.id }}</a> </dd>
+{% else %}
+    <dd><em>Not in flickr</em></dd>
+{% endif %}
+<dt>Google Photos</dt>
+{% if gphotos.id %}
+<dd><a href="{{ gphotos.url }}">{{ gphotos.id }}</a> </dd>
+{% else %}
+    <dd><em>Not in Google photos</em></dd>
+{% endif %}
+<dt>Blob</dt>
+<dd><a href="{{ url_for('picture_detail_blob', key=picture.key) }}">{{ picture.filename }}</a> </dd>
+</dl>
+</section>
 
 {% endblock %}

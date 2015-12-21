@@ -1,5 +1,7 @@
 import math
 import json
+from io import StringIO
+import xml.etree.ElementTree as etree
 from flask import Flask, render_template, request
 
 from upload_api import web_logger as log, settings_file
@@ -55,8 +57,62 @@ def pictures_for_page(db, page_num, tags=None, year=None):
     return db_pics
 
 
+def get_flickr_data(picture):
+    data = picture.get('flickr')
+    flickr = {'id': '', 'url': ''}
+    if data:
+        try:
+            flickr = json.loads(data)
+        except ValueError:
+            # Bad Json?
+            pass
+    return flickr
+
+
+def get_gphotos_data(picture):
+    xml_data = picture.get('gphotos')
+    photo_id, url = '', ''
+    if xml_data:
+        try:
+            xml_str = json.loads(xml_data).get('xml')
+        except ValueError:
+            # Bad Json?
+            pass
+        else:
+            if xml_str:
+                xml = etree.parse(StringIO(xml_str))
+                root = xml.getroot()
+                links = root.findall('{http://www.w3.org/2005/Atom}link')
+                rel = 'http://schemas.google.com/photos/2007#canonical'
+                matching = [l.attrib['href'] for l in links
+                            if l.attrib['rel'] == rel]
+                id_node = '{http://schemas.google.com/photos/2007}id'
+                photo_ids = root.findall(id_node)
+                photo_id = photo_ids[0].text if photo_ids else ''
+                url = matching[0] if matching else ''
+    return {
+        'url': url,
+        'id': photo_id
+    }
+
+
 @app.route('/', methods=['GET'])
 def index():
+    db_total = db.total_pictures()
+    all_tags = db.get_tags()
+    years = db.get_years()
+    recent = list(db.get_pictures(24, 0))
+    ctx = {
+        'recent': recent,
+        'total': db_total,
+        'all_tags': all_tags,
+        'years': years
+    }
+    return render_template('index.html', **ctx)
+
+
+@app.route('/photo/', methods=['GET'])
+def photo_list():
     page = int(request.args.get('page', '1'))
     pictures = pictures_for_page(db, page)
     db_total = db.total_pictures()
@@ -70,7 +126,7 @@ def index():
         'all_tags': all_tags,
         'years': years
     }
-    return render_template('index.html', **ctx)
+    return render_template('photo_list.html', **ctx)
 
 
 @app.route('/photo/<string:key>/')
@@ -80,7 +136,9 @@ def picture_detail(key):
     return render_template('detail.html', **{
         'picture': picture,
         'tags': tags,
-        'human_size': human_size(picture['size'])
+        'human_size': human_size(picture['size']),
+        'flickr': get_flickr_data(picture),
+        'gphotos': get_gphotos_data(picture)
     })
 
 
@@ -107,7 +165,7 @@ def view_tags(tag_list):
         'paginator': paginator,
         'total': tagged_total,
     }
-    return render_template('index.html', **ctx)
+    return render_template('photo_list.html', **ctx)
 
 
 @app.route('/date/<int:year>/')
@@ -124,7 +182,7 @@ def view_year(year):
         'total': tagged_total,
         'year': year,
     }
-    return render_template('index.html', **ctx)
+    return render_template('photo_list.html', **ctx)
 
 
 @app.route('/bad_jobs/')

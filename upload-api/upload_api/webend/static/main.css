@@ -128,6 +128,9 @@ height: 1.5rem;
 display: flex;
 align-items: center;
 }
+.permalinks dt, .permalinks dd {
+height: 2rem;
+}
 .permalink {
 border: 1px solid #cccccc;
 font-size: 0.8rem;
@@ -150,4 +153,7 @@ text-align: center;
 }
 .main-footer a {
 color: #AAA;
+}
+.extra-info {
+margin: 0 1rem;
 }
