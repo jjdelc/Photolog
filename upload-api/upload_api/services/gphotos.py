@@ -4,6 +4,7 @@ from urllib.parse import urlencode, urlunparse
 
 import requests
 from upload_api.db import TokensDB
+from upload_api import queue_logger as log
 
 """
 To obtain a bearer token you must:
@@ -127,18 +128,25 @@ def upload(settings, filename, name):
     """
     tokens = TokensDB(settings.DB_FILE)
     token = tokens.get_token(SERVICE)
+    token_type = 'Bearer'
     if token:
+        log.info('Attempting to use existing token')
         access_token = token['access_token']
+        token_type = token['token_type']
         if tokens.needs_refresh(SERVICE, access_token):
+            log.info('Refreshing Gphotos token...')
             access_token = refresh_access_token(tokens,
                 settings.GPHOTOS_CLIENT_ID,
                 settings.GPHOTOS_SECRET,
                 token['refresh_token']
             )
+            log.info("Token refreshed")
     else:
+        log.info('Obtaining Gphotos token')
         access_token = exchange_token(tokens,
             settings.GPHOTOS_CLIENT_ID,
             settings.GPHOTOS_SECRET,
             settings.GPHOTOS_ACCESS_CODE)
+        log.info("Token obtained")
 
-    return do_upload(filename, access_token, token['token_type'])
+    return do_upload(settings, filename, name, access_token, token_type)

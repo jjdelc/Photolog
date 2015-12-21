@@ -85,7 +85,7 @@ def gphotos_upload(db, settings, job):
     key = job['key']
     filename = job_fname(job, settings)
     gphotos_data = gphotos.upload(settings, filename, job['filename'])
-    db.update_picture(key, 'gphotos', json.dump({
+    db.update_picture(key, 'gphotos', json.dumps({
         'xml': gphotos_data
     }))
     return job
@@ -136,6 +136,7 @@ def daemon(db, settings, queue):
             next_job = process_task(db, settings, job)
         except KeyboardInterrupt as inter:
             log.info('Daemon interrupted')
+            queue.append(job)
             daemon_started = False
         except SystemExit as inter:
             # If job was interrupted, don't toss job.
@@ -143,8 +144,8 @@ def daemon(db, settings, queue):
             log.info('Daemon interrupted')
             daemon_started = False
         except Exception as exc:
+            raise
             ex_type, ex, tb = sys.exc_info()
-            print(sys.exc_info())
             traceback.print_tb(tb)
             if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
                 job['attempt'] += 1
