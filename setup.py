@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='upload_api',
+    name='Photolog',
     version='0.1',
     install_requirements=[
         'Flask==0.10.1'
@@ -15,9 +15,9 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'start_api=upload_api.main:start',
-            'start_queue=upload_api.queue_runner:start_daemon',
-            'start_web=upload_api.webend.app:start'
+            'start_api=photolog.api.main:start',
+            'start_queue=photolog.queue.main:start',
+            'start_web=photolog.web.main:start'
         ]
     }
 )

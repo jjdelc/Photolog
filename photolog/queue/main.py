@@ -1,13 +1,13 @@
-import os
-import sys
 import json
+import sys
 import traceback
 
-from . import queue_logger as log, settings_file
-from .db import DB
-from .squeue import SqliteQueue
-from .services import s3, gphotos, flickr, base
-from .settings import Settings
+import os
+from photolog.db import DB
+from photolog.settings import Settings
+from photolog.squeue import SqliteQueue
+from photolog.services import s3, gphotos, flickr, base
+from photolog import queue_logger as log, settings_file
 
 
 def job_fname(job, settings):
@@ -170,7 +170,7 @@ def daemon(db, settings, queue):
     log.info("Finishing daemon")
 
 
-def start_daemon():
+def start():
     settings = Settings.load(settings_file)
     db = DB(settings.DB_FILE)
     queue = SqliteQueue(settings.DB_FILE)

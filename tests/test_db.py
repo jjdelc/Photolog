@@ -1,8 +1,10 @@
 # coding: utf-8
 
-import os, shutil
-from upload_api.db import DB
 from unittest import TestCase
+
+import os
+import shutil
+from photolog import DB
 from . import TEST_FILES
 
 

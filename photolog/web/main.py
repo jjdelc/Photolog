@@ -4,10 +4,10 @@ from io import StringIO
 import xml.etree.ElementTree as etree
 from flask import Flask, render_template, request
 
-from upload_api import web_logger as log, settings_file
-from upload_api.db import DB
-from upload_api.settings import Settings
-from upload_api.squeue import SqliteQueue
+from photolog import web_logger as log, settings_file
+from photolog.db import DB
+from photolog.settings import Settings
+from photolog.squeue import SqliteQueue
 
 settings = Settings.load(settings_file)
 db = DB(settings.DB_FILE)

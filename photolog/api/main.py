@@ -8,10 +8,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
-from .squeue import SqliteQueue
-from . import api_logger as log, settings_file
-from .settings import Settings
-from .services.base import random_string
+from photolog.squeue import SqliteQueue
+from photolog.settings import Settings
+from photolog.services.base import random_string
+from photolog import api_logger as log, settings_file
 
 ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 settings = Settings.load(settings_file)

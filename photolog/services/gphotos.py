@@ -3,8 +3,8 @@ from time import time
 from urllib.parse import urlencode, urlunparse
 
 import requests
-from upload_api.db import TokensDB
-from upload_api import queue_logger as log
+from photolog.db import TokensDB
+from photolog import queue_logger as log
 
 """
 To obtain a bearer token you must:
