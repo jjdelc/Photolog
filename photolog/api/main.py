@@ -98,6 +98,12 @@ def add_photo():
             'error': 'Invalid file extension'
         }), 400
 
+    secret = request.form.get('secret', '')
+    if secret != settings.API_SECRET:
+        return jsonify({
+            'error': 'Invalid request'
+        }), 400
+
     tags = request.form.get('tags', '')
     tags = {slugify(t) for t in tags.split(',')}
     skip = request.form.get('skip', '')
