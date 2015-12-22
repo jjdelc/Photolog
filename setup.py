@@ -6,7 +6,6 @@ setup(
     install_requirements=[
         'Flask==0.10.1'
         'piexif==1.0.2',
-        'gunicorn==19.4.1',
         'flickrapi==2.1.2',
         'boto==2.38.0',
         'PyYAML==3.11',
