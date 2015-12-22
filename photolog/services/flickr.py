@@ -24,7 +24,7 @@ FLICKR_APP_SECRET = api.flickr_oauth.oauth.client.resource_owner_secret
 """
 
 
-KEY_LOOKUP_USER = 'mediascream'
+KEY_LOOKUP_USER = 'Photolog'
 
 
 def build(settings):
