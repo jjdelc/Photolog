@@ -1,4 +1,4 @@
-#Mediascream
+#Photolog
 
 This is my personal solution for photo management.
 
