@@ -124,7 +124,6 @@ def do_upload(settings, filename, name, access_token, token_type):
     return response.text
 
 
-
 def upload(settings, filename, name):
     """
     Uploads the given file to Google Photos and returns its url
