@@ -3,6 +3,7 @@ import re
 import uuid
 import binascii
 import unicodedata
+from hashlib import md5
 from datetime import datetime
 
 from flask import Flask, request, jsonify
@@ -11,9 +12,8 @@ from werkzeug.utils import secure_filename
 from photolog.squeue import SqliteQueue
 from photolog.settings import Settings
 from photolog.services.base import random_string
-from photolog import api_logger as log, settings_file
+from photolog import api_logger as log, settings_file, ALLOWED_FILES
 
-ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
 
@@ -98,8 +98,8 @@ def add_photo():
             'error': 'Invalid file extension'
         }), 400
 
-    secret = request.form.get('secret', '')
-    if secret != settings.API_SECRET:
+    secret = request.headers.get('X-PHOTOLOG-SECRET', '')
+    if secret != md5(settings.API_SECRET.encode('utf-8')).hexdigest():
         return jsonify({
             'error': 'Invalid request'
         }), 400

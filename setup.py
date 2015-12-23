@@ -16,7 +16,8 @@ setup(
         'console_scripts': [
             'start_api=photolog.api.main:start',
             'start_queue=photolog.queue.main:start',
-            'start_web=photolog.web.main:start'
+            'start_web=photolog.web.main:start',
+            'upload2photolog=photolog.tools.uploader:run'
         ]
     }
 )
