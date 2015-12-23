@@ -189,7 +189,6 @@ def view_year(year):
 def serial_job(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
-    return obj
 
 
 @app.route('/bad_jobs/')
