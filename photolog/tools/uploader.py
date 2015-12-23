@@ -2,6 +2,7 @@ import os
 import yaml
 import requests
 import argparse
+from time import time
 from hashlib import md5
 from urllib.parse import urljoin
 from photolog import cli_logger as log, ALLOWED_FILES
@@ -18,6 +19,7 @@ def read_local_conf(conf_file=None):
 
 def upload_directory(directory, endpoint, secret, tags):
     total_files = 0
+    start = time()
     for file in os.listdir(directory):
         name, ext = os.path.splitext(file)
         ext = ext.lstrip('.')
@@ -34,7 +36,8 @@ def upload_directory(directory, endpoint, secret, tags):
         })
         log.info('Uploaded %s' % file)
         total_files += 1
-    log.info('Uploaded %s files' % total_files)
+    elapsed = time() - start
+    log.info('Uploaded %s files in %.2fs' % (total_files, elapsed))
 
 
 def run():
