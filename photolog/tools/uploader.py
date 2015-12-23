@@ -17,6 +17,7 @@ def read_local_conf(conf_file=None):
 
 
 def upload_directory(directory, endpoint, secret, tags):
+    total_files = 0
     for file in os.listdir(directory):
         name, ext = os.path.splitext(file)
         ext = ext.lstrip('.')
@@ -32,6 +33,8 @@ def upload_directory(directory, endpoint, secret, tags):
             'X-PHOTOLOG-SECRET': secret
         })
         log.info('Uploaded %s' % file)
+        total_files += 1
+    log.info('Uploaded %s files' % total_files)
 
 
 def run():
