@@ -2,9 +2,13 @@
 {% block content %}
 <table class="bad-jobs">
 <tbody>
-{% for job in bad_jobs %}
+{% for job, blob in bad_jobs %}
 <tr>
-<td>{{ job }}</td>
+<td colspan="2">{{ job['key'] }}</td>
+</tr>
+<tr>
+<td>{{ job['filename'] }}</td>
+<td><pre>{{ blob }}</pre></td>
 </tr>
 {% endfor %}
 </tbody>

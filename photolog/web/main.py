@@ -1,6 +1,7 @@
 import math
 import json
 from io import StringIO
+from datetime import datetime
 import xml.etree.ElementTree as etree
 from flask import Flask, render_template, request
 
@@ -185,11 +186,18 @@ def view_year(year):
     return render_template('photo_list.html', **ctx)
 
 
+def serial_job(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
+
 @app.route('/bad_jobs/')
 def bad_jobs():
-    bad_jobs = queue.get_bad_jobs()
+    result = queue.get_bad_jobs()
     return render_template('bad_jobs.html', **{
-        'bad_jobs': bad_jobs
+        'bad_jobs': [(job, json.dumps(job, indent=2, default=serial_job))
+                     for job in result]
     })
 
 
