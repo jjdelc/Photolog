@@ -15,4 +15,5 @@ logging.basicConfig(
 settings_file = os.environ.get('SETTINGS')
 
 
-ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif', 'raw'}
+ALLOWED_FILES = {'jpg', 'jpeg', 'png', 'gif'}
+RAW_FILES = {'arw', 'raw'}
