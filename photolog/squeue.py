@@ -25,6 +25,7 @@ class SqliteQueue(object):
             ')'
             )]
     _count = 'SELECT COUNT(*) count FROM queue'
+    _count_bad = 'SELECT COUNT(*) count FROM bad_jobs'
     _iterate = 'SELECT id, item FROM queue'
     _append = 'INSERT INTO queue (item) VALUES (?)'
     _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
@@ -77,6 +78,10 @@ class SqliteQueue(object):
         with self._get_conn() as conn:
             return [loads(obj_buffer[0])
                     for obj_buffer in conn.execute(self._bad_jobs, [limit])]
+
+    def total_bad_jobs(self):
+        with self._get_conn() as conn:
+            return conn.execute(self._count_bad).fetchone()[0]
 
     def popleft(self, sleep_wait=True):
         keep_pooling = True
