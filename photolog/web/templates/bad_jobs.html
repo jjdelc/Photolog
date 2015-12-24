@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<h1>Bad jobs: {{ total_jobs }}</h1>
 <table class="bad-jobs">
 <tbody>
 {% for job, blob in bad_jobs %}
@@ -13,4 +14,9 @@
 {% endfor %}
 </tbody>
 </table>
+<form method="post">
+<p>
+<input type="submit" value="Retry all">
+</p>
+</form>
 {% endblock %}

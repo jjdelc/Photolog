@@ -24,7 +24,7 @@ class SqliteQueue(object):
             '  item BLOB'
             ')'
             )]
-    _count = 'SELECT COUNT(*) FROM queue'
+    _count = 'SELECT COUNT(*) count FROM queue'
     _iterate = 'SELECT id, item FROM queue'
     _append = 'INSERT INTO queue (item) VALUES (?)'
     _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
@@ -35,10 +35,9 @@ class SqliteQueue(object):
             'ORDER BY id LIMIT 1'
             )
     _popleft_del = 'DELETE FROM queue WHERE id = ?'
-    _peek = (
-            'SELECT item FROM queue '
-            'ORDER BY id LIMIT 1'
-            )
+    _peek = 'SELECT item FROM queue ORDER BY id LIMIT ?'
+    _retry = 'INSERT INTO queue(item) SELECT item FROM bad_jobs'
+    _clear_bad_jobs = 'DELETE FROM bad_jobs'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -49,7 +48,7 @@ class SqliteQueue(object):
 
     def __len__(self):
         with self._get_conn() as conn:
-            l = conn.execute(self._count).next()[0]
+            l = conn.execute(self._count).fetchone()[0]
         return l
 
     def __iter__(self):
@@ -105,10 +104,16 @@ class SqliteQueue(object):
                 return loads(obj_buffer)
         return None
 
-    def peek(self):
+    def peek(self, size=1):
         with self._get_conn() as conn:
-            cursor = conn.execute(self._peek)
+            cursor = conn.execute(self._peek, [size])
             try:
-                return loads(next(cursor)[0])
+                for row in cursor:
+                    yield loads(row[0])
             except StopIteration:
                 return None
+
+    def retry_jobs(self):
+        with self._get_conn() as conn:
+            conn.execute(self._retry)
+            conn.execute(self._clear_bad_jobs)

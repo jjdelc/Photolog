@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Job queue: {{ size }}</h1>
+<table class="jobs">
+<thead>
+<tr>
+    <th>Key</th>
+    <th>File</th>
+    <th>Step</th>
+</tr>
+</thead>
+<tbody>
+{% for job in jobs %}
+<tr>
+<td>{{ job.key }}</td>
+<td>{{ job.filename }}</td>
+<td>{{ job.step }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}
