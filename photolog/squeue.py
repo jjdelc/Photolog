@@ -114,6 +114,9 @@ class SqliteQueue(object):
                 return None
 
     def retry_jobs(self):
+        bad_jobs = self.get_bad_jobs()
         with self._get_conn() as conn:
-            conn.execute(self._retry)
-            conn.execute(self._clear_bad_jobs)
+            for bad in bad_jobs:
+                bad['attempt'] = 0
+                obj_buffer = memoryview(dumps(bad, 2))
+                conn.execute(self._append, (obj_buffer,))
