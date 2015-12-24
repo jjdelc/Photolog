@@ -213,7 +213,7 @@ class TokensDB(BaseDB):
         with self._get_conn() as conn:
             response = conn.execute(self._get_expires, [service, token]).fetchone()
             expires = response['expires']
-            return (time() - self.EXPIRE_WINDOW) > expires
+            return (time() + self.EXPIRE_WINDOW) > expires
 
     def get_token(self, service):
         with self._get_conn() as conn:
