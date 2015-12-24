@@ -210,10 +210,10 @@ def retry_jobs():
 @app.route('/bad_jobs/', methods=['GET'])
 def bad_jobs():
     result = queue.get_bad_jobs()
-    total_jobs = len(result)
+    total_jobs = queue.total_bad_jobs()
     return render_template('bad_jobs.html',
         bad_jobs=[(job, json.dumps(job, indent=2, default=serial_job))
-                     for job in result],
+                  for job in result],
         total_jobs=total_jobs
     )
 
