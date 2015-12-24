@@ -7,17 +7,23 @@ from photolog.db import DB
 from photolog.settings import Settings
 from photolog.squeue import SqliteQueue
 from photolog.services import s3, gphotos, flickr, base
-from photolog import queue_logger as log, settings_file
+from photolog import queue_logger as log, settings_file, RAW_FILES
 
 
 def job_fname(job, settings):
     return os.path.join(settings.UPLOAD_FOLDER, job['filename'])
 
 
+def is_raw_file(filename):
+    name, ext = os.path.splitext(filename)
+    ext = ext.lstrip('.').lower()
+    return ext in RAW_FILES
+
+
 def read_exif(db, settings, job):
     upload_date = job['uploaded_at']
     filename = job_fname(job, settings)
-    exif = base.read_exif(filename, upload_date)
+    exif = base.read_exif(filename, upload_date, is_raw_file(filename))
     job['data']['exif'] = exif
     return job
 
