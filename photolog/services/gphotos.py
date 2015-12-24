@@ -82,6 +82,7 @@ def exchange_token(tokens, client_id, secret, code):
         return response['access_token']
     else:
         # Some error
+        log.error('Error negotiating %s token: %s' % (SERVICE, response))
         raise ValueError('Error negotiating %s token: %s' % (SERVICE, response))
 
 
@@ -102,6 +103,7 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         return response['access_token']
     else:
         # Some error
+        log.error('Error refreshing %s token: %s' % (SERVICE, response))
         raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
 
 
@@ -120,6 +122,7 @@ def do_upload(settings, filename, name, access_token, token_type):
         data=open(filename, 'rb'), headers=headers)
     response = session.send(request.prepare())
     if response.status_code > 300:
+        log.error('Failed to upload: %s' % response.text)
         raise ValueError(response.text)
     return response.text
 
