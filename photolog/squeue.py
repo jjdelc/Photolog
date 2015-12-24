@@ -38,7 +38,7 @@ class SqliteQueue(object):
     _popleft_del = 'DELETE FROM queue WHERE id = ?'
     _peek = 'SELECT item FROM queue ORDER BY id LIMIT ?'
     _retry = 'INSERT INTO queue(item) SELECT item FROM bad_jobs'
-    _drop_bad = 'DELETE FROM bad_jobs WHERE id = ?'
+    _drop_bad = 'DELETE FROM bad_jobs'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -119,10 +119,6 @@ class SqliteQueue(object):
                 return None
 
     def retry_jobs(self):
-        bad_jobs = self.get_bad_jobs()
         with self._get_conn() as conn:
-            for bad in bad_jobs:
-                bad['attempt'] = 0
-                obj_buffer = memoryview(dumps(bad, 2))
-                conn.execute(self._append, (obj_buffer,))
-                conn.execute(self._drop_bad, (bad['id'],))
+            conn.execute(self._retry)
+            conn.execute(self._drop_bad)
