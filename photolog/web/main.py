@@ -193,7 +193,7 @@ def serial_job(obj):
 
 @app.route('/jobs/')
 def view_queue():
-    result = queue.peek(20)
+    result = queue.peek(200)
     size = len(queue)
     return render_template('jobs.html',
         jobs=result,
