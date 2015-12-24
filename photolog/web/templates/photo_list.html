@@ -9,7 +9,6 @@
     </li>
 {% endfor %}
 </ol>
-<section class="extra-info">
 <ol class="paginator">
 {% if paginator.prev %}
     <li><a href="?page={{paginator.prev}}"><i class="fa fa-chevron-left"></i> </a></li>
@@ -26,6 +25,7 @@
 {% endif %}
     <li class="page-count">{{ paginator.total_pages }} pages</li>
 </ol>
+<section class="extra-info">
 <h2>Year/Tags</h2>
 <ul class="tag-list">
     <li><a href="{{ url_for('photo_list') }}">All</a></li>

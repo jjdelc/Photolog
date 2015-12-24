@@ -38,29 +38,43 @@ flex: 0 1 auto;
 padding: 5px;
 display: flex;
 align-items: center;
+min-width: 100px;
+}
+.photo-thumb-list a {
+display: block;
+width: 100%;
 }
 .photo-thumb-list img {
 border: 1px solid #333333;
 display: block;
+margin: 0 auto;
 }
 .paginator {
 list-style-type: none;
 padding: 0;
 display: flex;
 font-size: 0.8rem;
-margin: 0 auto;
+margin: 0 0.5rem;
+border: 1px solid #cccccc;
+line-height: 200%;
+max-width: 20rem;
 }
 .paginator li a {
 display: block;
 text-decoration: none;
 text-align: center;
-width: 3rem;
+min-width: 2rem;
+border-left: 1px solid #cccccc;
+color: blue;
 }
 .paginator li a.current {
 font-weight: bold;
+color: black;
 }
-.paginator .pate-count {
+.paginator .page-count {
 color: #AAA;
+text-align: right;
+font-style: italic;
 }
 .tag-list {
 list-style-type: none;
