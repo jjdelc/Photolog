@@ -4,7 +4,8 @@ import string
 import piexif
 import shutil
 import exifread
-from time import time
+from datetime import datetime
+from time import time, mktime
 from PIL import Image, ExifTags
 from os.path import splitext, basename, join
 
@@ -82,11 +83,25 @@ def generate_thumbnails(filename, thumbs_folder):
     return generated
 
 
-def store_photo(db, key, name, s3_urls, tags, upload_date, exif):
+TIME_FORMAT = '%Y:%m:%d %H:%M:%S'
+
+
+def taken_timestamp(time_string, exif):
+    try:
+        dt = datetime.strptime(time_string, TIME_FORMAT)
+    except ValueError:
+        # Could not get a date... then what? Use base day
+        dt = datetime(exif['year'], exif['month'], exif['day'])
+    return mktime(dt.timetuple())
+
+
+def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
+        notes=''):
+    taken_time = taken_timestamp(exif['timestamp'], exif)
     values = {
         'name': name,
         'filename': name,
-        'notes': '',
+        'notes': notes,
         'key': key,
         'year': exif['year'],
         'month': exif['month'],
@@ -99,10 +114,12 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif):
         'height': exif['height'],
         'size': exif['size'],
         'original': s3_urls['original'],
-        'thumb': s3_urls['thumb'],
-        'medium': s3_urls['medium'],
-        'web': s3_urls['web'],
-        'large': s3_urls['large'],
+        'thumb': s3_urls.get('thumb', ''),
+        'medium': s3_urls.get('medium', ''),
+        'web': s3_urls.get('web', ''),
+        'format': format,
+        'large': s3_urls.get('large', ''),
+        'taken_time': taken_time,
     }
     db.add_picture(values, tags)
 
@@ -113,7 +130,7 @@ def delete_file(filename, thumbs):
         os.remove(thumb_file)
 
 
-def read_exif(filename, upload_date):
+def read_exif(filename, upload_date, is_image):
     exif = exifread.process_file(open(filename, 'rb'))
     timestamp = None
     year, month, day = upload_date.year, upload_date.month, upload_date.day
@@ -122,7 +139,10 @@ def read_exif(filename, upload_date):
         timestamp = str(exif['EXIF DateTimeOriginal'])
         # fmt='2015:12:04 00:50:53'
         year, month, day = timestamp.split(' ')[0].split(':')
-    dims = Image.open(filename).size
+    if is_image:
+        dims = Image.open(filename).size
+    else:
+        dims = None, None
     brand = str(exif.get('Image Make', 'Unknown camera'))
     model = str(exif.get('Image Model', ''))
     return {

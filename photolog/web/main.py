@@ -102,7 +102,7 @@ def index():
     db_total = db.total_pictures()
     all_tags = db.get_tags()
     years = db.get_years()
-    recent = list(db.get_pictures(24, 0))
+    recent = list(db.get_recent(24, 0))
     ctx = {
         'recent': recent,
         'total': db_total,

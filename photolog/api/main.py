@@ -18,7 +18,7 @@ settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB
+app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB  # Raw files
 
 
 def allowed_file(filename):

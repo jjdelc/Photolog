@@ -59,6 +59,8 @@ class DB(BaseDB):
             '  size INTEGER,'
             '  camera TEXT,'
             '  upload_date TEXT,'
+            '  format TEXT,'
+            '  taken_time INTEGER,'
             '  upload_time INTEGER,'
             '  exif_read INTEGER,'
             '  date_taken TEXT'
@@ -78,12 +80,14 @@ class DB(BaseDB):
             ');'
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
-    _get_pictures = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
+    _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?'
+    _get_recent = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
                             '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
                             ' ORDER BY upload_time DESC LIMIT ? OFFSET ?')
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
+    _find_picture = 'SELECT * FROM pictures WHERE %s'
     _get_tags = 'SELECT name FROM tags'
     _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
@@ -99,6 +103,7 @@ class DB(BaseDB):
     _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
                              'upload_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
+    _last_picture = 'SELECT MAX(id) FROM pictures'
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
@@ -117,6 +122,10 @@ class DB(BaseDB):
         with self._get_conn() as conn:
             return conn.execute(self._get_pictures, (limit, offset))
 
+    def get_recent(self, limit, offset):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_recent, (limit, offset))
+
     def get_tagged_pictures(self, tags, limit, offset):
         with self._get_conn() as conn:
             tag_ids = [str(t['id'])
@@ -127,6 +136,16 @@ class DB(BaseDB):
     def get_picture(self, key):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
+
+    def last_picture(self, key):
+        with self._get_conn() as conn:
+            max_id = conn.execute(self._last_picture).fetchone()
+
+    def find_picture(self, params):
+        with self._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
+            return conn.execute(query, values).fetchone()
 
     def total_pictures(self):
         with self._get_conn() as conn:
