@@ -4,7 +4,8 @@ import string
 import piexif
 import shutil
 import exifread
-from time import time
+from datetime import datetime
+from time import time, mktime
 from PIL import Image, ExifTags
 from os.path import splitext, basename, join
 
@@ -82,8 +83,21 @@ def generate_thumbnails(filename, thumbs_folder):
     return generated
 
 
+TIME_FORMAT = '%Y:%m:%d %H:%M:%S'
+
+
+def taken_timestamp(time_string, exif):
+    try:
+        dt = datetime.strptime(time_string, TIME_FORMAT)
+    except ValueError:
+        # Could not get a date... then what? Use base day
+        dt = datetime(exif['year'], exif['month'], exif['day'])
+    return mktime(dt.timetuple())
+
+
 def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
         notes=''):
+    taken_time = taken_timestamp(exif['timestamp'], exif)
     values = {
         'name': name,
         'filename': name,
@@ -105,7 +119,7 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
         'web': s3_urls.get('web', ''),
         'format': format,
         'large': s3_urls.get('large', ''),
-        'taken_time': 0,  # TODO: Calculate timestamp
+        'taken_time': taken_time,
     }
     db.add_picture(values, tags)
 

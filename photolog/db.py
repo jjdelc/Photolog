@@ -102,6 +102,7 @@ class DB(BaseDB):
     _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
                              'upload_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
+    _last_picture = 'SELECT MAX(id) FROM pictures'
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
@@ -130,6 +131,10 @@ class DB(BaseDB):
     def get_picture(self, key):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
+
+    def last_picture(self, key):
+        with self._get_conn() as conn:
+            max_id = conn.execute(self._last_picture).fetchone()
 
     def find_picture(self, params):
         with self._get_conn() as conn:
