@@ -81,6 +81,7 @@ class DB(BaseDB):
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
     _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?'
+    _get_recent = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
                             '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
@@ -120,6 +121,10 @@ class DB(BaseDB):
     def get_pictures(self, limit, offset):
         with self._get_conn() as conn:
             return conn.execute(self._get_pictures, (limit, offset))
+
+    def get_recent(self, limit, offset):
+        with self._get_conn() as conn:
+            return conn.execute(self._get_recent, (limit, offset))
 
     def get_tagged_pictures(self, tags, limit, offset):
         with self._get_conn() as conn:
