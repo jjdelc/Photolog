@@ -80,7 +80,7 @@ class DB(BaseDB):
             ');'
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
-    _get_pictures = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
+    _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
                             '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
