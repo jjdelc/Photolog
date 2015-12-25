@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import os
 import shutil
-from photolog import DB
+from photolog.db import DB
 from . import TEST_FILES
 
 
@@ -55,3 +55,43 @@ class TestDB(TestCase):
         db.update_picture(key, attr, value)
         pic = db.get_picture(key)
         self.assertEqual(pic[attr], value)
+
+    def test_find_picture(self):
+        db_file = os.path.join(TEST_FILES, 'test_find_picture.db')
+        db = DB(db_file)
+        db.add_picture({
+            'original': 'original.jpg',
+            'name': 'name',
+            'year': 2015,
+            'month': 12,
+            'day': 25
+        }, ['phone', 'travel'])
+        db.add_picture({
+            'original': 'not original.jpg',
+            'name': 'not name',
+            'year': 2015,
+            'month': 12,
+            'day': 25
+        }, ['phone', 'travel'])
+        db.add_picture({
+            'original': 'other original.jpg',
+            'name': 'name',
+            'year': 2012,
+            'month': 12,
+            'day': 25
+        }, ['phone', 'travel'])
+        found = db.find_picture({
+            'name': 'name',
+            'year': 2015
+        })
+        self.assertEqual(found['original'], 'original.jpg')
+        found = db.find_picture({
+            'name': 'name',
+            'year': 2012
+        })
+        self.assertEqual(found['original'], 'other original.jpg')
+        found = db.find_picture({
+            'name': 'name',
+            'year': 2020  # Doesn't exist
+        })
+        self.assertIsNone(found)

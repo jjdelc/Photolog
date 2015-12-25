@@ -100,11 +100,11 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
         'height': exif['height'],
         'size': exif['size'],
         'original': s3_urls['original'],
-        'thumb': s3_urls['thumb'],
-        'medium': s3_urls['medium'],
-        'web': s3_urls['web'],
+        'thumb': s3_urls.get('thumb', ''),
+        'medium': s3_urls.get('medium', ''),
+        'web': s3_urls.get('web', ''),
         'format': format,
-        'large': s3_urls['large'],
+        'large': s3_urls.get('large', ''),
         'taken_time': 0,  # TODO: Calculate timestamp
     }
     db.add_picture(values, tags)

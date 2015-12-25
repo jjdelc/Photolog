@@ -1,7 +1,7 @@
 import os
 import json
-from photolog import queue_logger as log
 from photolog.services import s3, gphotos, flickr, base
+from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES
 
 
 def job_fname(job, settings):
@@ -26,7 +26,7 @@ class BaseJob(object):
 
     def _read_exif(self):
         upload_date = self.data['uploaded_at']
-        exif = base.read_exif(self.filename, upload_date,
+        exif = base.read_exif(self.full_filepath, upload_date,
             self.format == 'image')
         self.data['data']['exif'] = exif
 
@@ -54,15 +54,15 @@ class BaseJob(object):
             s3_urls, tags, upload_date, exif, self.format, notes=self._get_notes())
 
     def finish_job(self):
-        thumbs = self.data['data']['thumbs']
+        thumbs = self.data['data'].get('thumbs', {})
         base.delete_file(self.full_filepath, thumbs)
         return None  # This ends the processing
 
     def process(self):
-        step = self.data['step']
-        task_name, next_step = self.steps[step]
         job = self.data
-        if step in self.data['skip']:
+        step = job['step']
+        task_name, next_step = self.steps[step]
+        if step in job.get('skip', []):
             job['step'] = next_step
             job['attempt'] = 0  # Step completed. Start next job fresh
             log.info('Skipping %s - Step: %s (%s)' % (self.key, step,
@@ -144,16 +144,31 @@ class RawFileJob(BaseJob):
     format = 'raw'
 
     def _get_reference_file(self):
-        return self.db.find_picture({
-            'name': self.filename,
-            'year': self.data['exif']['year'],
-            'month': self.data['exif']['month'],
-            'day': self.data['exif']['day'],
-        })
+        name, ext = os.path.splitext(self.original_filename)
+        # We hope that the raw file came with a sister JPEG file
+        # it should have the sane name in JPG extension
+        possibilities = [p % name for p in [
+            '%s.jpg',
+            '%s.JPG',
+            '%s.JPEG',
+            '%s.jpeg',
+        ]]
+        exif = self.data['data']['exif']
+        for pos in possibilities:
+            result = self.db.find_picture({
+                'name': pos,
+                'year': exif['year'],
+                'month': exif['month'],
+                'day': exif['day'],
+            })
+            if result:
+                return result
 
     def _get_notes(self):
-        file = self._get_reference_file()
-        return 'REFERENCE: %s' % file['key']
+        reference = self._get_reference_file()
+        if reference:
+            return 'REFERENCE: %s' % reference['key']
+        return ''
 
     def _s3_upload(self):
         job = self.data
@@ -163,6 +178,17 @@ class RawFileJob(BaseJob):
             'original': self.full_filepath
         }, path)
         job['data']['s3_urls'] = s3_urls
+
+    def _copy_thumbs(self):
+        # Will use thumbnail from reference file
+        reference = self._get_reference_file()
+        if reference:
+            self.data['data']['s3_urls'].update({
+                'thumb': reference['thumb'],
+                'web': reference['web'],
+                'large': reference['large'],
+                'medium': reference['medium'],
+            })
 
     def local_process(self):
         """
@@ -175,15 +201,24 @@ class RawFileJob(BaseJob):
         self._read_exif()
         # We don't generate thumbnails for RAW files
         log.info('Processing %s - Step: s3_upload (%s)' % (key, base_file))
-        reference = self._get_reference_file()
         self._s3_upload()
-        # Will use thumbnail from reference file
-        self.data['data']['thumbs'].update({
-            'thumb': reference['thumb'],
-            'web': reference['web'],
-            'large': reference['large'],
-        })
+        self._copy_thumbs()
         log.info('Processing %s - Step: local_store (%s)' % (key, base_file))
         self._local_store()
         return self.data
 
+
+job_types = [
+    (ImageJob, IMAGE_FILES),
+    (RawFileJob, RAW_FILES)
+]
+
+
+def prepare_job(job, db, settings):
+    filename = job_fname(job, settings)
+    name, ext = os.path.splitext(filename)
+    ext = ext.lstrip('.').lower()
+    for cls, types in job_types:
+        if ext in types:
+            return cls(job, db, settings)
+    # Then what?

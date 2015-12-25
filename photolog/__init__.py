@@ -17,4 +17,5 @@ settings_file = os.environ.get('SETTINGS')
 
 IMAGE_FILES = {'jpg', 'jpeg', 'png', 'gif'}
 RAW_FILES = {'arw', 'raw'}
+VIDEO_FILES = {'mp4', 'avi', 'ogv', 'mpg', 'mpeg', 'mkv'}
 ALLOWED_FILES = RAW_FILES | IMAGE_FILES

@@ -6,6 +6,7 @@ import os
 from photolog.db import DB
 from photolog.settings import Settings
 from photolog.squeue import SqliteQueue
+from photolog.queue.jobs import prepare_job
 from photolog.services import s3, gphotos, flickr, base
 from photolog import queue_logger as log, settings_file, RAW_FILES
 
@@ -114,7 +115,7 @@ steps = {  # Step function, Next job
 }
 
 
-def process_task(db, settings, job):
+def _process_task(db, settings, job):
     step = job['step']
     filename = job_fname(job, settings)
     base_file = os.path.basename(filename)
@@ -148,7 +149,7 @@ def daemon(db, settings, queue):
     while daemon_started:
         job = queue.popleft(100)
         try:
-            next_job = process_task(db, settings, job)
+            next_job = prepare_job(job, db, settings).process()
         except KeyboardInterrupt as inter:
             log.info('Daemon interrupted')
             queue.append(job)

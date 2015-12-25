@@ -5,7 +5,7 @@ import argparse
 from time import time
 from hashlib import md5
 from urllib.parse import urljoin
-from photolog import cli_logger as log, ALLOWED_FILES
+from photolog import cli_logger as log, ALLOWED_FILES, IMAGE_FILES, RAW_FILES
 
 
 def read_local_conf(conf_file=None):
@@ -17,17 +17,25 @@ def read_local_conf(conf_file=None):
     return conf
 
 
-def upload_directory(directory, endpoint, secret, tags):
+def upload_directory(directory, endpoint, secret, tags, skip):
     total_files = 0
     start = time()
+    first_batch, second_batch = [], []
     for file in os.listdir(directory):
         name, ext = os.path.splitext(file)
-        ext = ext.lstrip('.')
-        if ext.lower() not in ALLOWED_FILES:
+        ext = ext.lstrip('.').lower()
+        if ext not in ALLOWED_FILES:
             continue
         full_file = os.path.join(directory, file)
+        if ext in IMAGE_FILES:
+            first_batch.append((file, full_file))
+        elif ext in RAW_FILES:
+            second_batch.append((file, full_file))
+
+    for file, full_file in first_batch + second_batch:
         requests.post(endpoint, data={
             'tags': tags,
+            'skip': skip,
             'secret': secret
         }, files={
             'photo_file': open(full_file, 'rb'),
@@ -46,13 +54,19 @@ def run():
         description="Upload files or directories to Photolog"
     )
     parser.add_argument('directory', type=str, help="Directory to upload")
-    parser.add_argument('--tags', metavar='T', nargs='?', type=str, help="Tags for this batch")
+    parser.add_argument('--tags', metavar='T', nargs='?', type=str,
+        help="Tags for this batch")
+    parser.add_argument('--host', metavar='H', nargs='?', type=str,
+        help="Host to upload")
+    parser.add_argument('--skip', nargs='?', type=str,
+        help="steps to skip")
     parsed = parser.parse_args()
     directory = os.path.realpath(parsed.directory)
-    endpoint = urljoin(config['host'], '/photos/')
+    endpoint = urljoin(parsed.host or config['host'], '/photos/')
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
     tags = parsed.tags or ''
-    upload_directory(directory, endpoint, secret, tags)
+    skip = parsed.skip or ''
+    upload_directory(directory, endpoint, secret, tags, skip)
 
 
 if __name__ == '__main__':
