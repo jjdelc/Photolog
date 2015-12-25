@@ -59,6 +59,8 @@ class DB(BaseDB):
             '  size INTEGER,'
             '  camera TEXT,'
             '  upload_date TEXT,'
+            '  format TEXT,'
+            '  taken_time INTEGER,'
             '  upload_time INTEGER,'
             '  exif_read INTEGER,'
             '  date_taken TEXT'

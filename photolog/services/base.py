@@ -82,7 +82,8 @@ def generate_thumbnails(filename, thumbs_folder):
     return generated
 
 
-def store_photo(db, key, name, s3_urls, tags, upload_date, exif, notes=''):
+def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
+        notes=''):
     values = {
         'name': name,
         'filename': name,
@@ -102,7 +103,9 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, notes=''):
         'thumb': s3_urls['thumb'],
         'medium': s3_urls['medium'],
         'web': s3_urls['web'],
+        'format': format,
         'large': s3_urls['large'],
+        'taken_time': 0,  # TODO: Calculate timestamp
     }
     db.add_picture(values, tags)
 
@@ -113,7 +116,7 @@ def delete_file(filename, thumbs):
         os.remove(thumb_file)
 
 
-def read_exif(filename, upload_date, raw=False):
+def read_exif(filename, upload_date, is_image):
     exif = exifread.process_file(open(filename, 'rb'))
     timestamp = None
     year, month, day = upload_date.year, upload_date.month, upload_date.day
@@ -122,7 +125,7 @@ def read_exif(filename, upload_date, raw=False):
         timestamp = str(exif['EXIF DateTimeOriginal'])
         # fmt='2015:12:04 00:50:53'
         year, month, day = timestamp.split(' ')[0].split(':')
-    if not raw:
+    if is_image:
         dims = Image.open(filename).size
     else:
         dims = None, None
