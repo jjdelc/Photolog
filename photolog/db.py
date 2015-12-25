@@ -85,7 +85,7 @@ class DB(BaseDB):
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
                             '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
-                            ' ORDER BY upload_time DESC LIMIT ? OFFSET ?')
+                            ' ORDER BY taken_time DESC LIMIT ? OFFSET ?')
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _find_picture = 'SELECT * FROM pictures WHERE %s'
     _get_tags = 'SELECT name FROM tags'
