@@ -136,6 +136,7 @@ content: ":";
 dd {
 font-size: 0.9rem;
 font-style: italic;
+margin: 0;
 }
 dd, dt {
 height: 1.5rem;
@@ -148,10 +149,11 @@ height: 2rem;
 .permalink {
 border: 1px solid #cccccc;
 font-size: 0.8rem;
-padding: 0.1rem;
+padding: 0.2rem;
 margin: 0.1rem;
 color: #888;
 background: #eeeeee;
+width: 10rem;
 }
 .permalink-link {
 background: blue;
