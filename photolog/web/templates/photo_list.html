@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+{% if year %}
+    <h1><a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
+    {% if month %} - {{ month }}{% endif %}</h1>
+{% endif %}
+{% if selected_tags %}
+    <h1>{{ ' - '.join(selected_tags) }}</h1>
+{% endif %}
 <ol class="photo-thumb-list">
 {% for pic in pictures %}
     <li>
@@ -23,10 +30,22 @@
 {% else %}
     <li><a><i class="fa fa-chevron-right"></i> </a></li>
 {% endif %}
-    <li class="page-count">{{ paginator.total_pages }} pages</li>
+    <li><form>
+        <input type="number"  class="page-count" name="page" placeholder="{{ paginator.total_pages }} pages"/>
+    </form></li>
 </ol>
 <section class="extra-info">
 <h2>Year/Tags</h2>
+{% if months %}
+<ul class="tag-list">
+    <li><a href="{{ url_for('view_year', year=year) }}">{{ year }}</a></li>
+{% for month in months %}
+    <li>
+    <a href="{{ url_for('view_month', year=year, month=month) }}">{{ year }}/{{ month }}</a>
+    </li>
+{% endfor %}
+</ul>
+{% endif %}
 <ul class="tag-list">
     <li><a href="{{ url_for('photo_list') }}">All</a></li>
 {% for year in years %}

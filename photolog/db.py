@@ -88,6 +88,9 @@ class DB(BaseDB):
                             ' ORDER BY taken_time DESC LIMIT ? OFFSET ?')
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _find_picture = 'SELECT * FROM pictures WHERE %s'
+    _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
+                     'DESC LIMIT ? OFFSET ?'
+    _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
     _get_tags = 'SELECT name FROM tags'
     _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
@@ -101,7 +104,7 @@ class DB(BaseDB):
     _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
     _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
     _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
-                             'upload_time DESC LIMIT ? OFFSET ?')
+                             'taken_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
     _last_picture = 'SELECT MAX(id) FROM pictures'
 
@@ -137,15 +140,23 @@ class DB(BaseDB):
         with self._get_conn() as conn:
             return conn.execute(self._get_picture, [key]).fetchone()
 
-    def last_picture(self, key):
-        with self._get_conn() as conn:
-            max_id = conn.execute(self._last_picture).fetchone()
-
     def find_picture(self, params):
         with self._get_conn() as conn:
             fields, values = zip(*params.items())
             query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
             return conn.execute(query, values).fetchone()
+
+    def find_pictures(self, params, limit, offset):
+        with self._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._find_pictures % ' AND '.join('%s = ?' % f for f in fields)
+            return conn.execute(query, list(values) + [limit, offset])
+
+    def count_pictures(self, params):
+        with self._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._count_pictures % ' AND '.join('%s = ?' % f for f in fields)
+            return conn.execute(query, values).fetchone()['count']
 
     def total_pictures(self):
         with self._get_conn() as conn:

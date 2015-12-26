@@ -72,6 +72,11 @@ font-weight: bold;
 color: black;
 }
 .paginator .page-count {
+width: 5rem;
+border: 0;
+font-size: 0.7rem;
+}
+.paginator input::-moz-placeholder {
 color: #AAA;
 text-align: right;
 font-style: italic;

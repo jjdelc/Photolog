@@ -182,6 +182,32 @@ def view_year(year):
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
+        'months': ['%02d' % m for m in range(1, 13)]
+    }
+    return render_template('photo_list.html', **ctx)
+
+
+@app.route('/date/<int:year>/<int:month>/')
+def view_month(year, month):
+    page = int(request.args.get('page', '1'))
+    month = '%02d' % month
+    year = str(year)
+    params = {
+        'year': year,
+        'month': month
+    }
+    offset, limit = (page - 1) * PAGE_SIZE, PAGE_SIZE
+    pictures = db.find_pictures(params, limit, offset)
+    tagged_total = db.count_pictures(params)
+    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    all_tags = db.get_tags()
+    ctx = {
+        'all_tags': all_tags,
+        'pictures': pictures,
+        'paginator': paginator,
+        'total': tagged_total,
+        'year': year,
+        'month': month
     }
     return render_template('photo_list.html', **ctx)
 
