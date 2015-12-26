@@ -67,7 +67,6 @@ def run():
     parser.add_argument('--skip', nargs='?', type=str,
         help="steps to skip")
     parsed = parser.parse_args()
-    import pdb;pdb.set_trace()
     directories = [os.path.realpath(d) for d in parsed.directories]
     endpoint = urljoin(parsed.host or config['host'], '/photos/')
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
