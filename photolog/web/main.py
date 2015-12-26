@@ -176,13 +176,15 @@ def view_year(year):
     tagged_total = db.total_for_year(year)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
+    years = db.get_years()
     ctx = {
         'all_tags': all_tags,
         'pictures': pictures,
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'months': ['%02d' % m for m in range(1, 13)]
+        'months': ['%02d' % m for m in range(1, 13)],
+        'years': years
     }
     return render_template('photo_list.html', **ctx)
 
@@ -201,13 +203,16 @@ def view_month(year, month):
     tagged_total = db.count_pictures(params)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
+    years = db.get_years()
     ctx = {
         'all_tags': all_tags,
         'pictures': pictures,
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'month': month
+        'month': month,
+        'months': ['%02d' % m for m in range(1, 13)],
+        'years': years
     }
     return render_template('photo_list.html', **ctx)
 
