@@ -41,7 +41,7 @@
     <li><a href="{{ url_for('view_year', year=year) }}">{{ year }}</a></li>
 {% for month in months %}
     <li>
-    <a href="{{ url_for('view_month', year=year, month=month) }}">{{ year }}/{{ month }}</a>
+    <a href="{{ url_for('view_month', year=year, month=month) }}">{{ month }}</a>
     </li>
 {% endfor %}
 </ul>
