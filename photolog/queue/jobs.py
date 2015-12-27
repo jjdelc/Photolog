@@ -80,7 +80,10 @@ class BaseJob(object):
                 job['attempt'] = 0  # Step completed. Start next job fresh
             else:
                 log.info('Finished %s (%s)' % (self.key, self.filename))
-
+                if self.data['is_last']:
+                    batch_id = self.data['batch_id']
+                    base.end_batch(batch_id, self.settings)
+                    log.info("Batch %s ended" % batch_id)
         return job
 
 
@@ -110,8 +113,13 @@ class ImageJob(BaseJob):
         return self.data
 
     def gphotos_upload(self):
+        batch_id = self.data['batch_id']
+        album_url = None
+        if batch_id:
+            album_url = base.batch_2_album(batch_id, self.settings,
+                section='feed')
         gphotos_data = gphotos.upload(self.settings, self.full_filepath,
-            self.filename)
+            self.filename, album_url)
         self.db.update_picture(self.key, 'gphotos', json.dumps({
             'xml': gphotos_data
         }))

@@ -1,5 +1,6 @@
 import os
 from time import time
+import xml.etree.ElementTree as etree
 from urllib.parse import urlencode, urlunparse
 
 import requests
@@ -38,6 +39,13 @@ EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
 OOB_URL = "urn:ietf:wg:oauth:2.0:oob"
 CODE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 PICASA_ENDPOINT = "https://picasaweb.google.com/data/feed/api/user/default"
+
+# For Gphotos/Atom XML parsing
+etree.register_namespace('', 'http://www.w3.org/2005/Atom')
+etree.register_namespace('gphoto', 'http://schemas.google.com/photos/2007')
+etree.register_namespace('media', 'http://search.yahoo.com/mrss/')
+etree.register_namespace('app', 'http://www.w3.org/2007/app')
+etree.register_namespace('gd', 'http://schemas.google.com/g/2005')
 
 
 def get_access_code(client_id):
@@ -107,7 +115,7 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
 
 
-def do_upload(settings, filename, name, access_token, token_type):
+def do_upload(album_endpoint, filename, name, access_token, token_type):
     headers = {
         'GData-Version': 2,
         'Slug': name,
@@ -117,8 +125,7 @@ def do_upload(settings, filename, name, access_token, token_type):
         'MIME-version': '1.0'
     }
     session = requests.Session()
-    # Uploads to "Drop Box" album
-    request = requests.Request('POST', PICASA_ENDPOINT,
+    request = requests.Request('POST', album_endpoint,
         data=open(filename, 'rb'), headers=headers)
     response = session.send(request.prepare())
     if response.status_code > 300:
@@ -127,15 +134,11 @@ def do_upload(settings, filename, name, access_token, token_type):
     return response.text
 
 
-def upload(settings, filename, name):
-    """
-    Uploads the given file to Google Photos and returns its url
-    """
+def get_token(settings):
     tokens = TokensDB(settings.DB_FILE)
     token = tokens.get_token(SERVICE)
     token_type = 'Bearer'
     if token:
-        log.info('Attempting to use existing token')
         access_token = token['access_token']
         token_type = token['token_type']
         if tokens.needs_refresh(SERVICE, access_token):
@@ -153,5 +156,94 @@ def upload(settings, filename, name):
             settings.GPHOTOS_SECRET,
             settings.GPHOTOS_ACCESS_CODE)
         log.info("Token obtained")
+    return access_token, token_type
 
-    return do_upload(settings, filename, name, access_token, token_type)
+
+def upload(settings, filename, name, album):
+    """
+    Uploads the given file to Google Photos and returns its url
+    """
+    access_token, token_type = get_token(settings)
+    # Uploads to "Drop Box" album unless other specified
+    album = album or PICASA_ENDPOINT
+    return do_upload(album, filename, name, access_token, token_type)
+
+
+album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'
+    xmlns:media='http://search.yahoo.com/mrss/'
+    xmlns:gphoto='http://schemas.google.com/photos/2007'>
+  <title type='text'>%s</title>
+  <gphoto:access>private</gphoto:access>
+  <category scheme='http://schemas.google.com/g/2005#kind'
+    term='http://schemas.google.com/photos/2007#album'></category>
+</entry>"""
+
+link_tag = '{http://www.w3.org/2005/Atom}link'
+
+
+def create_album(album_name, settings):
+    access_token, token_type = get_token(settings)
+    payload = album_meta % album_name
+    headers = {
+        'GData-Version': 2,
+        'Authorization': '%s %s' % (token_type, access_token),
+        'MIME-version': '1.0',
+        'Content-length': len(payload.encode('ascii')),
+        'Content-Type': 'application/atom+xml; charset=UTF-8'
+    }
+    session = requests.Session()
+    request = requests.Request('POST', PICASA_ENDPOINT,
+        data=payload.encode('ascii'), headers=headers)
+    response = session.send(request.prepare())
+    if response.status_code == 201:
+        xml = etree.fromstring(response.text)
+        links = [t for t in xml.findall(link_tag) if t.get('rel') == 'self']
+        if links:
+            return links[0].get('href')
+        raise ValueError('Malformed album response')
+    else:
+        raise ValueError('Failed to create album')
+
+
+def delete_album(album_url, settings):
+    access_token, token_type = get_token(settings)
+    headers = {
+        'GData-Version': 2,
+        'Authorization': '%s %s' % (token_type, access_token),
+        'MIME-version': '1.0',
+        'If-Match': '*'
+    }
+    response = requests.delete(album_url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError('Failed to delete album')
+
+
+def clear_album(album_url, settings):
+    """
+    Removes all photos from an album
+    """
+    access_token, token_type = get_token(settings)
+    response = requests.get(album_url, headers={
+        'GData-Version': 2,
+        'Authorization': '%s %s' % (token_type, access_token),
+        'MIME-version': '1.0',
+    })
+    if response.status_code != 200:
+        raise ValueError('Error reading album')
+    xml = etree.fromstring(response.text)
+    groups = xml.findall('{http://search.yahoo.com/mrss/}group')
+    # There should only be one group... but oh well
+    for group in groups:
+        while group:  # While it has children, remove it
+            group.remove(group[0])
+    empty_album = etree.tostring(xml)
+    response = requests.put(album_url, data=empty_album, headers={
+        'GData-Version': 2,
+        'Authorization': '%s %s' % (token_type, access_token),
+        'MIME-version': '1.0',
+        'Content-length': len(empty_album),
+        'Content-Type': 'application/atom+xml; charset=UTF-8',
+        'If-Match': '*'
+    })
+    if response.status_code > 300:
+        raise ValueError('Error updating album')

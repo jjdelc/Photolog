@@ -11,8 +11,8 @@ from werkzeug.utils import secure_filename
 
 from photolog.squeue import SqliteQueue
 from photolog.settings import Settings
-from photolog.services.base import random_string
 from photolog import api_logger as log, settings_file, ALLOWED_FILES
+from photolog.services.base import random_string, start_batch, end_batch
 
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
@@ -59,7 +59,8 @@ def filename_for_file(uploaded_file, filename, path):
     return unique_filename(secure_filename(filename), _crc, path)
 
 
-def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip):
+def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip,
+        batch_id, is_last):
     filename = filename_for_file(uploaded_file, base_filename,
                                  _settings.UPLOAD_FOLDER)
 
@@ -74,8 +75,15 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip):
         'data': {},  # Store additional parameters,
         'attempt': 0,  # Records how many times this step has been attempted
         'skip': skip,
+        'batch_id': batch_id,
+        'is_last': bool(is_last)
     })
     return filename
+
+
+def valid_secret():
+    secret = request.headers.get('X-PHOTOLOG-SECRET', '')
+    return secret != md5(settings.API_SECRET.encode('utf-8')).hexdigest()
 
 
 @app.route('/photos/', methods=['GET'])
@@ -83,6 +91,28 @@ def get_photo():
     return jsonify({
         'last': queue.peek()
     }), 200
+
+
+@app.route('/photos/batch/', methods=['POST'])
+def new_batch():
+    if valid_secret():
+        return jsonify({
+            'error': 'Invalid request'
+        }), 400
+    batch_id = start_batch(settings)
+    return jsonify({
+        'batch_id': batch_id
+    })
+
+
+@app.route('/photos/batch/<string:batch_id>/', methods=['DELETE'])
+def finish_batch(batch_id):
+    if valid_secret():
+        return jsonify({
+            'error': 'Invalid request'
+        }), 400
+    end_batch(batch_id, settings)
+    return '', 204
 
 
 @app.route('/photos/', methods=['POST'])
@@ -98,19 +128,20 @@ def add_photo():
             'error': 'Invalid file extension'
         }), 400
 
-    secret = request.headers.get('X-PHOTOLOG-SECRET', '')
-    if secret != md5(settings.API_SECRET.encode('utf-8')).hexdigest():
+    if valid_secret():
         return jsonify({
             'error': 'Invalid request'
         }), 400
 
+    batch_id = request.form.get('batch_id', '')
+    is_last = request.form.get('is_last', '')
     tags = request.form.get('tags', '')
     tags = {slugify(t) for t in tags.split(',')}
     skip = request.form.get('skip', '')
     skip = {slugify(t) for t in skip.split(',')}
     tags = [t for t in tags if t]  # Strip empty
     filename = _add_photo(settings, queue, uploaded_file,
-                          uploaded_file.filename, tags, skip)
+                          uploaded_file.filename, tags, skip, batch_id, is_last)
     log.info('Queued file: %s' % filename)
     return '', 201
 

@@ -7,7 +7,10 @@ import exifread
 from datetime import datetime
 from time import time, mktime
 from PIL import Image, ExifTags
+from urllib.parse import urlparse, urljoin
 from os.path import splitext, basename, join
+
+from .gphotos import create_album, delete_album, clear_album
 
 
 THUMBNAILS = {
@@ -27,8 +30,8 @@ for orientation in ExifTags.TAGS.keys():
         break
 
 
-def random_string():
-    return ''.join([random.choice(string.ascii_letters) for _ in range(6)])
+def random_string(size=6):
+    return ''.join([random.choice(string.ascii_letters) for _ in range(size)])
 
 
 def read_rotation(img_data):
@@ -157,4 +160,37 @@ def read_exif(filename, upload_date, is_image):
         'size': os.stat(filename).st_size,
         'exif_read': exif_read
     }
+
+
+def start_batch(settings):
+    """
+    For now, we only need batches to handle GPhotos uploads. The default folder
+     has a limit of 2000 pictures so we need to create a new folder per batch
+     and delete it at the end of the batch.
+     The batch_id returned will be the Gphotos folder ID
+    """
+    name = random_string(6) + str(time())
+    album_url = create_album(name, settings)
+    print('Created album %s' % album_url)
+    parsed = urlparse(album_url)
+    path = parsed.path
+    chunks = path.split('/')
+    return '%s:%s' % (chunks[5], chunks[7])
+
+
+ALBUM_HOST = 'https://picasaweb.google.com/'
+
+
+def batch_2_album(batch_id, settings, section='entry'):
+    user_id, album_id = batch_id.split(':')
+    path = ['', 'data', section, 'api', 'user', user_id, 'albumid', album_id]
+    path = '/'.join(path)
+    album_url = urljoin(ALBUM_HOST, path)
+    return album_url
+
+
+def end_batch(batch_id, settings):
+    album_url = batch_2_album(batch_id, settings)
+    clear_album(album_url, settings)
+    #delete_album(album_url, settings)
 
