@@ -52,6 +52,6 @@ def run():
             base_command.append("--tags '%s'" % tags)
         lines.append(' '.join(base_command))
 
-    with open(output, 'w') as fh:
+    with open(output, 'a') as fh:
         fh.write('\n'.join(lines))
 
