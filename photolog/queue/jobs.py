@@ -156,6 +156,7 @@ class RawFileJob(BaseJob):
         # We hope that the raw file came with a sister JPEG file
         # it should have the sane name in JPG extension
         possibilities = [p % name for p in [
+            '%s_ARW_embedded.jpg',
             '%s.jpg',
             '%s.JPG',
             '%s.JPEG',
