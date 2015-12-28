@@ -34,20 +34,31 @@ def start_batch(endpoint, secret):
     return batch_id
 
 
-def upload_directories(directories, endpoint, secret, tags, skip):
+def upload_directories(targets, endpoint, secret, tags, skip):
     start = time()
     first_batch, second_batch = [], []
-    for directory in directories:
-        for file in os.listdir(directory):
-            name, ext = os.path.splitext(file)
+    for target in targets:
+        if os.path.isdir(target):
+            for file in os.listdir(target):
+                name, ext = os.path.splitext(file)
+                ext = ext.lstrip('.').lower()
+                if ext not in ALLOWED_FILES:
+                    continue
+                full_file = os.path.join(target, file)
+                if ext in IMAGE_FILES:
+                    first_batch.append((file, full_file))
+                elif ext in RAW_FILES:
+                    second_batch.append((file, full_file))
+        else:
+            name, ext = os.path.splitext(target)
             ext = ext.lstrip('.').lower()
+            full_file = os.path.abspath(target)
             if ext not in ALLOWED_FILES:
                 continue
-            full_file = os.path.join(directory, file)
             if ext in IMAGE_FILES:
-                first_batch.append((file, full_file))
+                first_batch.append((target, full_file))
             elif ext in RAW_FILES:
-                second_batch.append((file, full_file))
+                second_batch.append((target, full_file))
 
     n = 1
     total_files = len(first_batch) + len(second_batch)
