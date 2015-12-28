@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% block content %}
+{% block header %}
 {% if year %}
-    <h1><a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
-    {% if month %} - {{ month }}{% endif %}</h1>
+    &raquo; <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
+    {% if month %} - {{ month }}{% endif %}
 {% endif %}
 {% if selected_tags %}
-    <h1>{{ ' - '.join(selected_tags) }}</h1>
+    &raquo; {{ ' - '.join(selected_tags) }}
 {% endif %}
+{% endblock %}
+
+{% block content %}
 <ol class="photo-thumb-list">
 {% for pic in pictures %}
     <li>

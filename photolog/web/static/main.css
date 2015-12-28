@@ -102,7 +102,7 @@ font-size: 0.8rem;
 max-width: 100%;
 margin: 0;
 border: 2px solid #333333;
-background: #333333;
+background: radial-gradient(circle, #333333, #000000);
 }
 .main-picture-detail img {
 display: block;
@@ -115,7 +115,6 @@ width: auto;
 .main-picture-detail figcaption {
 font-size: 0.9rem;
 color: white;
-background: #333333;
 padding: 0.5rem;
 display: flex;
 }
