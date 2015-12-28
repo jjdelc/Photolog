@@ -63,7 +63,7 @@ def upload_directories(targets, endpoint, secret, tags, skip):
     n = 1
     total_files = len(first_batch) + len(second_batch)
     log.info('Found %s files' % total_files)
-    for batch in chunks(first_batch + second_batch, BATCH_SIZE):
+    for batch in chunks(sorted(first_batch) + sorted(second_batch), BATCH_SIZE):
         #batch_id = start_batch(endpoint, secret)
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
