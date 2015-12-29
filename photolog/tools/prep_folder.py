@@ -55,5 +55,5 @@ def run():
         lines.append(' '.join(base_command))
 
     with open(output, 'a') as fh:
-        fh.write('\n'.join(lines))
+        fh.write(' &&\\\n'.join(lines))
 
