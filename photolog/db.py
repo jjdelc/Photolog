@@ -108,6 +108,7 @@ class DB(BaseDB):
                              'taken_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
     _last_picture = 'SELECT MAX(id) FROM pictures'
+    _file_exists = 'SELECT COUNT(*) count FROM pictures WHERE name=? AND checksum=?'
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
@@ -210,6 +211,10 @@ class DB(BaseDB):
     def total_for_year(self, year):
         with self._get_conn() as conn:
             return conn.execute(self._total_for_year, [year]).fetchone()['count']
+
+    def file_exists(self, name, checksum):
+        with self._get_conn() as conn:
+            return bool(conn.execute(self._file_exists, [name, checksum]).fetchone()['count'])
 
 
 class TokensDB(BaseDB):

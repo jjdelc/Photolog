@@ -9,6 +9,7 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
+from photolog.db import DB
 from photolog.squeue import SqliteQueue
 from photolog.settings import Settings
 from photolog import api_logger as log, settings_file, ALLOWED_FILES
@@ -16,6 +17,7 @@ from photolog.services.base import random_string, start_batch, end_batch
 
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
+db = DB(settings.DB_FILE)
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB  # Raw files
@@ -113,6 +115,14 @@ def finish_batch(batch_id):
         }), 400
     end_batch(batch_id, settings)
     return '', 204
+
+
+@app.route('/photos/verify/', methods=['GET'])
+def verify_photo():
+    filename = request.form.get('filename', '')
+    checksum = request.form.get('checksum', '')
+    exists = db.file_exists(filename, checksum)
+    return '', 204 if exists else 404
 
 
 @app.route('/photos/', methods=['POST'])

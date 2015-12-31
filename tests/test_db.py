@@ -95,3 +95,14 @@ class TestDB(TestCase):
             'year': 2020  # Doesn't exist
         })
         self.assertIsNone(found)
+
+    def test_file_exists(self):
+        db_file = os.path.join(TEST_FILES, 'test_file_exists.db')
+        db = DB(db_file)
+        db.add_picture({
+            'original': 'original.jpg',
+            'checksum': 'checksum',
+            'name': 'name',
+        }, ['phone', 'travel'])
+        self.assertTrue(db.file_exists('name', 'checksum'))
+        self.assertFalse(db.file_exists('name', 'not checksum'))
