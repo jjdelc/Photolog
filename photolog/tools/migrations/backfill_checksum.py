@@ -48,7 +48,7 @@ def migrate(conn):
 
     for pic_id, checksum in updates:
         conn.execute('UPDATE pictures SET checksum =? WHERE id=?',
-            [pic_id, checksum])
+            [checksum, pic_id])
 
 
 if __name__ == '__main__':
