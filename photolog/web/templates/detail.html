@@ -11,7 +11,8 @@
     <time>
         <a href="{{ url_for('view_year', year=picture.year) }}">{{ picture.year }}</a>
         - <a href="{{ url_for('view_month', year=picture.year,month=picture.month) }}">{{ picture.month }}</a>
-        - {{ picture.day }}</time>
+        - <a href="{{ url_for('view_day', year=picture.year,month=picture.month,day=picture.day) }}">{{ picture.month }}</a>
+        </time>
 </figcaption>
 </figure>
 
