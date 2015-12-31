@@ -149,7 +149,7 @@ def add_photo():
         }), 400
 
     batch_id = request.form.get('batch_id', '')
-    is_last = request.form.get('is_last', '')
+    is_last = request.form.get('is_last', False)
     tags = request.form.get('tags', '')
     tags = {slugify(t) for t in tags.split(',')}
     skip = request.form.get('skip', '')
