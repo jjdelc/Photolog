@@ -75,7 +75,7 @@ def upload_directories(targets, host, secret, tags, skip):
             elif ext in RAW_FILES:
                 second_batch.append((target, full_file))
 
-    n = 1
+    n, skipped = 1, 0
     total_files = len(first_batch) + len(second_batch)
     log.info('Found %s files' % total_files)
     for batch in chunks(sorted(first_batch) + sorted(second_batch), BATCH_SIZE):
@@ -86,6 +86,7 @@ def upload_directories(targets, host, secret, tags, skip):
             file_exists = verify_exists(host, full_file, secret)
             if file_exists:
                 log.info('File %s already uploaded' % full_file)
+                skipped += 1
             else:
                 requests.post(endpoint, data={
                     'tags': tags,
@@ -101,6 +102,7 @@ def upload_directories(targets, host, secret, tags, skip):
                 log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
             n += 1
     elapsed = time() - start
+    log.info('Skipped files: %s' % skipped)
     log.info('Uploaded %s files in %.2fs' % (total_files, elapsed))
 
 
