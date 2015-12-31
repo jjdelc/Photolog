@@ -3,6 +3,7 @@
 {% if year %}
     &raquo; <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
     {% if month %} - {{ month }}{% endif %}
+    {% if day %} - {{ day }}{% endif %}
 {% endif %}
 {% if selected_tags %}
     &raquo; {{ ' - '.join(selected_tags) }}
@@ -39,6 +40,19 @@
 </ol>
 <section class="extra-info">
 <h2>Year/Tags</h2>
+{% if days %}
+<ul class="tag-list">
+{% for day in days %}
+    <li>
+    {% if day.has_data %}
+    <a href="{{ url_for('view_day', year=year, month=month, day=day.day) }}">{{ day.day }}</a>
+    {% else %}
+    <a class="disabled">{{ day.day }}</a>
+    {% endif %}
+    </li>
+{% endfor %}
+</ul>
+{% endif %}
 {% if months %}
 <ul class="tag-list">
     <li><a href="{{ url_for('view_year', year=year) }}">{{ year }}</a></li>

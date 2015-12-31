@@ -105,6 +105,7 @@ class DB(BaseDB):
     _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
     _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
     _get_months = 'SELECT DISTINCT month from pictures WHERE year = ? ORDER BY year DESC'
+    _get_days = 'SELECT DISTINCT day from pictures WHERE year=? AND month=? ORDER BY year DESC'
     _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
                              'taken_time DESC LIMIT ? OFFSET ?')
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
@@ -208,6 +209,10 @@ class DB(BaseDB):
     def get_months(self, year):
         with self._get_conn() as conn:
             return [y['month'] for y in conn.execute(self._get_months, [year])]
+
+    def get_days(self, year, month):
+        with self._get_conn() as conn:
+            return [y['day'] for y in conn.execute(self._get_days, [year, month])]
 
     def get_pictures_for_year(self, year, limit, offset):
         with self._get_conn() as conn:
