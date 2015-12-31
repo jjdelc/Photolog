@@ -51,7 +51,7 @@ def get_paginator(total, page_size, current):
 def pictures_for_page(db, page_num, tags=None, year=None):
     offset, limit = (page_num - 1) * PAGE_SIZE, PAGE_SIZE
     if tags:
-        db_pics = list(db.get_tagged_pictures(tags, limit, offset))
+        db_pics = list(db.tags.tagged_pictures(tags, limit, offset))
     elif year:
         db_pics = list(db.get_pictures_for_year(year, limit, offset))
     else:
@@ -174,7 +174,7 @@ def view_tags(tag_list):
     page = int(request.args.get('page', '1'))
     tags = [t.lower() for t in tag_list.split(',') if t]
     pictures = pictures_for_page(db, page, tags)
-    tagged_total = db.total_for_tags(tags)
+    tagged_total = db.tags.total_for_tags(tags)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
