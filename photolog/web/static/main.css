@@ -98,6 +98,9 @@ color: white;
 border-radius: 0.5em;
 font-size: 0.8rem;
 }
+.tag-list .disabled {
+background: #cccccc;
+}
 .main-picture-detail {
 max-width: 100%;
 margin: 0;
@@ -126,6 +129,10 @@ width: 50%;
 .main-picture-detail .picture-meta {
 font-size: 0.7rem;
 color: #cccccc;
+}
+.main-picture-detail time a {
+color: white;
+text-decoration: none;
 }
 dt {
 float: left;

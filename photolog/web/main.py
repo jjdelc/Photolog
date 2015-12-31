@@ -159,14 +159,23 @@ def view_tags(tag_list):
     tagged_total = db.total_for_tags(tags)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
+    years = db.get_years()
     ctx = {
         'selected_tags': tags,
         'all_tags': all_tags,
         'pictures': pictures,
         'paginator': paginator,
         'total': tagged_total,
+        'years': years,
     }
     return render_template('photo_list.html', **ctx)
+
+
+def months_tags(months):
+    return [{
+        'month': m,
+        'has_data': m in months
+    } for m in ['%02d' % m for m in range(1, 13)]]
 
 
 @app.route('/date/<int:year>/')
@@ -177,13 +186,14 @@ def view_year(year):
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
     years = db.get_years()
+    present_months = db.get_months(year)
     ctx = {
         'all_tags': all_tags,
         'pictures': pictures,
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'months': ['%02d' % m for m in range(1, 13)],
+        'months': months_tags(present_months),
         'years': years
     }
     return render_template('photo_list.html', **ctx)
@@ -204,6 +214,7 @@ def view_month(year, month):
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.get_tags()
     years = db.get_years()
+    present_months = db.get_months(year)
     ctx = {
         'all_tags': all_tags,
         'pictures': pictures,
@@ -211,7 +222,7 @@ def view_month(year, month):
         'total': tagged_total,
         'year': year,
         'month': month,
-        'months': ['%02d' % m for m in range(1, 13)],
+        'months': months_tags(present_months),
         'years': years
     }
     return render_template('photo_list.html', **ctx)

@@ -4,11 +4,14 @@
 <img src="{{ picture.web }}"/>
 <figcaption>
     <p>
-    {{ picture.name }}
+    <span title="MD5: {{ picture.checksum }}">{{ picture.name }}</span>
         <span class="picture-meta">({{ picture.width }}x{{ picture.height }})
      - <abbr title="{{ picture.size }} bytes">{{ human_size }}</abbr></span>
     </p>
-    <o>{{ picture.year }}-{{ picture.month }}-{{ picture.day }}</o>
+    <time>
+        <a href="{{ url_for('view_year', year=picture.year) }}">{{ picture.year }}</a>
+        - <a href="{{ url_for('view_month', year=picture.year,month=picture.month) }}">{{ picture.month }}</a>
+        - {{ picture.day }}</time>
 </figcaption>
 </figure>
 
