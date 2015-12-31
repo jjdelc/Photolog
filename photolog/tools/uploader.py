@@ -71,7 +71,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
                     log.info('File %s already uploaded' % full_file)
                     return False
                 else:
-                    requests.post(endpoint, data={
+                    response = requests.post(endpoint, data={
                         'tags': tags,
                         'skip': skip,
                         # 'batch_id': None,
@@ -81,7 +81,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
                     }, headers={
                         'X-PHOTOLOG-SECRET': secret
                     })
-                    return True
+                    return response.status_code == 201
             except requests.ConnectionError:
                 attempt += 1
                 log.warning("Attempt %s. Failed to connect. Retrying" % attempt)
