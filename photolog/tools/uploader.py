@@ -9,6 +9,7 @@ from photolog.services.base import file_checksum
 from photolog import cli_logger as log, ALLOWED_FILES, IMAGE_FILES, RAW_FILES
 
 BATCH_SIZE = 1999  # Max Gphotos album is 2000
+UPLOAD_ATTEMPTS = 3
 
 
 def chunks(l, n):
@@ -48,9 +49,52 @@ def verify_exists(host, full_filepath, secret):
     return response.status_code == 204
 
 
-def upload_directories(targets, host, secret, tags, skip):
+def handle_file(host, full_file, secret, tags, skip, halt):
+    """
+    :param host: Host to upload data to
+    :param full_file: Full file path in local machine
+    :param secret: API secret
+    :param tags: Tags to use for file
+    :param skip: Steps for job to skip
+    :param halt: If True, will wait for user input to resume after attempts
+    :return: Returns if the file was uploaded or not
+    """
+
+    answer = 'Y'
+    while answer == 'Y':
+        attempt = 1
+        while attempt < UPLOAD_ATTEMPTS:
+            try:
+                file_exists = verify_exists(host, full_file, secret)
+                endpoint = urljoin(host, '/photos/')
+                if file_exists:
+                    log.info('File %s already uploaded' % full_file)
+                    return False
+                else:
+                    requests.post(endpoint, data={
+                        'tags': tags,
+                        'skip': skip,
+                        # 'batch_id': None,
+                        # 'is_last': False,  # n == total_files
+                    }, files={
+                        'photo_file': open(full_file, 'rb'),
+                    }, headers={
+                        'X-PHOTOLOG-SECRET': secret
+                    })
+                    return True
+            except requests.ConnectionError:
+                attempt += 1
+                log.warning("Attempt %s. Failed to connect. Retrying" % attempt)
+
+        if halt:
+            answer = input("Problem connecting, Continue? [Y, n]") or 'Y'
+        else:
+            answer = 'n'
+    raise requests.ConnectionError('Could not connect to %s' % host)
+
+
+def upload_directories(targets, host, secret, tags, skip, halt):
     start = time()
-    endpoint = urljoin(host, '/photos/')
     first_batch, second_batch = [], []
     for target in targets:
         if os.path.isdir(target):
@@ -83,23 +127,10 @@ def upload_directories(targets, host, secret, tags, skip):
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
             file_start = time()
-            file_exists = verify_exists(host, full_file, secret)
-            if file_exists:
-                log.info('File %s already uploaded' % full_file)
-                skipped += 1
-            else:
-                requests.post(endpoint, data={
-                    'tags': tags,
-                    'skip': skip,
-                    # 'batch_id': None,
-                    # 'is_last': False,  # n == total_files
-                }, files={
-                    'photo_file': open(full_file, 'rb'),
-                }, headers={
-                    'X-PHOTOLOG-SECRET': secret
-                })
-                pct = 100 * n / total_files
-                log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
+            uploaded = handle_file(host, full_file, secret, tags, skip, halt)
+            skipped += 1 if not uploaded else 0
+            pct = 100 * n / total_files
+            log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
             n += 1
     elapsed = time() - start
     log.info('Skipped files: %s' % skipped)
@@ -121,11 +152,12 @@ def run():
         help="steps to skip")
     parsed = parser.parse_args()
     directories = [os.path.realpath(d) for d in parsed.directories]
+    halt = config.get('halt', False)
     host = parsed.host or config['host']
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
     tags = parsed.tags or ''
     skip = parsed.skip or ''
-    upload_directories(directories, host, secret, tags, skip)
+    upload_directories(directories, host, secret, tags, skip, halt)
 
 
 if __name__ == '__main__':
