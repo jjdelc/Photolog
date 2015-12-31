@@ -131,9 +131,12 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
 
 
 def delete_file(filename, thumbs):
-    os.remove(filename)
-    for thumb_file in thumbs.values():
-        os.remove(thumb_file)
+    all_files = [filename] + list(thumbs.values())
+    for thumb_file in all_files:
+        try:
+            os.remove(thumb_file)
+        except OSError:
+            pass
 
 
 def read_exif(filename, upload_date, is_image):
