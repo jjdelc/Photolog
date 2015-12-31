@@ -124,8 +124,8 @@ def verify_photo():
             'error': 'Invalid request'
         }), 400
 
-    filename = request.form.get('filename', '')
-    checksum = request.form.get('checksum', '')
+    filename = request.args.get('filename', '')
+    checksum = request.args.get('checksum', '')
     exists = db.file_exists(filename, checksum)
     return '', 204 if exists else 404
 

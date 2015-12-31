@@ -38,7 +38,7 @@ def start_batch(endpoint, secret):
 def verify_exists(host, filename, full_filepath, secret):
     verification = urljoin(host, '/photos/verify/')
     checksum = file_checksum(full_filepath)
-    response = requests.get(verification, {
+    response = requests.get(verification, params={
         'name': filename,
         'checksum': checksum
     }, headers={
