@@ -35,11 +35,12 @@ def start_batch(endpoint, secret):
     return batch_id
 
 
-def verify_exists(host, filename, full_filepath, secret):
+def verify_exists(host, full_filepath, secret):
     verification = urljoin(host, '/photos/verify/')
     checksum = file_checksum(full_filepath)
+    filename = os.path.basename(full_filepath)
     response = requests.get(verification, params={
-        'name': filename,
+        'filename': filename,
         'checksum': checksum
     }, headers={
         'X-PHOTOLOG-SECRET': secret
@@ -82,7 +83,7 @@ def upload_directories(targets, host, secret, tags, skip):
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
             file_start = time()
-            file_exists = verify_exists(host, file, full_file, secret)
+            file_exists = verify_exists(host, full_file, secret)
             if file_exists:
                 log.info('File %s already uploaded' % full_file)
             else:
