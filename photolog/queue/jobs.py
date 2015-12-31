@@ -85,10 +85,10 @@ class BaseJob(object):
                 job['attempt'] = 0  # Step completed. Start next job fresh
             else:
                 log.info('Finished %s (%s)' % (self.key, self.filename))
-                if self.data['is_last']:
-                    batch_id = self.data['batch_id']
-                    base.end_batch(batch_id, self.settings)
-                    log.info("Batch %s ended" % batch_id)
+                # if self.data['is_last']:
+                #     batch_id = self.data['batch_id']
+                #     base.end_batch(batch_id, self.settings)
+                #     log.info("Batch %s ended" % batch_id)
         return job
 
 
