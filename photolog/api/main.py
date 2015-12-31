@@ -119,6 +119,11 @@ def finish_batch(batch_id):
 
 @app.route('/photos/verify/', methods=['GET'])
 def verify_photo():
+    if valid_secret():
+        return jsonify({
+            'error': 'Invalid request'
+        }), 400
+
     filename = request.form.get('filename', '')
     checksum = request.form.get('checksum', '')
     exists = db.file_exists(filename, checksum)
