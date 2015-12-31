@@ -82,7 +82,7 @@ def upload_directories(targets, host, secret, tags, skip):
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
             file_start = time()
-            file_exists = verify_exists(host, file, full_file)
+            file_exists = verify_exists(host, file, full_file, secret)
             if file_exists:
                 log.info('File %s already uploaded' % full_file)
             else:
