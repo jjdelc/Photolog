@@ -35,12 +35,14 @@ def start_batch(endpoint, secret):
     return batch_id
 
 
-def verify_exists(host, filename, full_filepath):
+def verify_exists(host, filename, full_filepath, secret):
     verification = urljoin(host, '/photos/verify/')
     checksum = file_checksum(full_filepath)
     response = requests.get(verification, {
         'name': filename,
         'checksum': checksum
+    }, headers={
+        'X-PHOTOLOG-SECRET': secret
     })
     return response.status_code == 204
 
