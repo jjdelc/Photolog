@@ -5,6 +5,7 @@ import argparse
 from time import time
 from hashlib import md5
 from urllib.parse import urljoin
+from photolog.services.base import file_checksum
 from photolog import cli_logger as log, ALLOWED_FILES, IMAGE_FILES, RAW_FILES
 
 BATCH_SIZE = 1999  # Max Gphotos album is 2000
@@ -34,8 +35,19 @@ def start_batch(endpoint, secret):
     return batch_id
 
 
-def upload_directories(targets, endpoint, secret, tags, skip):
+def verify_exists(host, filename, full_filepath):
+    verification = urljoin(host, '/photos/verify/')
+    checksum = file_checksum(full_filepath)
+    response = requests.get(verification, {
+        'name': filename,
+        'checksum': checksum
+    })
+    return response.status_code == 204
+
+
+def upload_directories(targets, host, secret, tags, skip):
     start = time()
+    endpoint = urljoin(host, '/photos/')
     first_batch, second_batch = [], []
     for target in targets:
         if os.path.isdir(target):
@@ -68,18 +80,22 @@ def upload_directories(targets, endpoint, secret, tags, skip):
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
             file_start = time()
-            requests.post(endpoint, data={
-                'tags': tags,
-                'skip': skip,
-                #'batch_id': batch_id,
-                #'is_last': n == total_files
-            }, files={
-                'photo_file': open(full_file, 'rb'),
-            }, headers={
-                'X-PHOTOLOG-SECRET': secret
-            })
-            pct = 100 * n / total_files
-            log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
+            file_exists = verify_exists(host, file, full_file)
+            if file_exists:
+                log.info('File %s already uploaded' % full_file)
+            else:
+                requests.post(endpoint, data={
+                    'tags': tags,
+                    'skip': skip,
+                    'batch_id': None,
+                    'is_last': False, # n == total_files
+                }, files={
+                    'photo_file': open(full_file, 'rb'),
+                }, headers={
+                    'X-PHOTOLOG-SECRET': secret
+                })
+                pct = 100 * n / total_files
+                log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
             n += 1
     elapsed = time() - start
     log.info('Uploaded %s files in %.2fs' % (total_files, elapsed))
@@ -100,11 +116,11 @@ def run():
         help="steps to skip")
     parsed = parser.parse_args()
     directories = [os.path.realpath(d) for d in parsed.directories]
-    endpoint = urljoin(parsed.host or config['host'], '/photos/')
+    host = parsed.host or config['host']
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
     tags = parsed.tags or ''
     skip = parsed.skip or ''
-    upload_directories(directories, endpoint, secret, tags, skip)
+    upload_directories(directories, host, secret, tags, skip)
 
 
 if __name__ == '__main__':
