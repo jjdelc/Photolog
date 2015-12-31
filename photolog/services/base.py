@@ -4,6 +4,8 @@ import string
 import piexif
 import shutil
 import exifread
+from hashlib import md5
+from functools import partial
 from datetime import datetime
 from time import time, mktime
 from PIL import Image, ExifTags
@@ -99,7 +101,7 @@ def taken_timestamp(time_string, exif):
 
 
 def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
-        notes=''):
+        checksum, notes=''):
     taken_time = taken_timestamp(exif['timestamp'], exif)
     values = {
         'name': name,
@@ -108,6 +110,7 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
         'key': key,
         'year': exif['year'],
         'month': exif['month'],
+        'checksum': checksum,
         'day': exif['day'],
         'date_taken': exif['timestamp'],
         'upload_date': str(upload_date),
@@ -193,4 +196,13 @@ def end_batch(batch_id, settings):
     album_url = batch_2_album(batch_id, settings)
     clear_album(album_url, settings)
     #delete_album(album_url, settings)
+
+
+# http://stackoverflow.com/a/7829658/43490
+def file_checksum(filename):
+    with open(filename, 'rb') as fh:
+        d = md5()
+        for buf in iter(partial(fh.read, 1024), b''):
+            d.update(buf)
+    return d.hexdigest()
 

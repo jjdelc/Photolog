@@ -41,17 +41,22 @@ class BaseJob(object):
     def _get_notes(self):
         return ''
 
+    def _get_checksum(self):
+        return base.file_checksum(self.full_filepath)
+
     def _local_store(self):
         job = self.data
         upload_date = job['uploaded_at']
         exif = job['data']['exif']
         s3_urls = job['data']['s3_urls']
         tags = job['tags']
+        checksum = self._get_checksum()
         base.store_photo(
             self.db,
             self.key,
             self.original_filename,
-            s3_urls, tags, upload_date, exif, self.format, notes=self._get_notes())
+            s3_urls, tags, upload_date, exif, self.format,
+            checksum, notes=self._get_notes())
 
     def finish_job(self):
         thumbs = self.data['data'].get('thumbs', {})

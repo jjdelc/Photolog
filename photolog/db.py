@@ -44,6 +44,7 @@ class DB(BaseDB):
             '  filename TEXT,'
             '  notes TEXT,'
             '  key TEXT,'
+            '  checksum TEXT,'
             '  original TEXT,'
             '  thumb TEXT,'
             '  medium TEXT,'
