@@ -91,8 +91,8 @@ def upload_directories(targets, host, secret, tags, skip):
                 requests.post(endpoint, data={
                     'tags': tags,
                     'skip': skip,
-                    'batch_id': None,
-                    'is_last': False,  # n == total_files
+                    # 'batch_id': None,
+                    # 'is_last': False,  # n == total_files
                 }, files={
                     'photo_file': open(full_file, 'rb'),
                 }, headers={
