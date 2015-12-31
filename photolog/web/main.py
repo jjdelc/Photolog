@@ -3,12 +3,13 @@ import json
 from io import StringIO
 from datetime import datetime
 import xml.etree.ElementTree as etree
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 
 from photolog import web_logger as log, settings_file
 from photolog.db import DB
 from photolog.settings import Settings
 from photolog.squeue import SqliteQueue
+from photolog.services import base
 
 settings = Settings.load(settings_file)
 db = DB(settings.DB_FILE)
@@ -100,7 +101,7 @@ def get_gphotos_data(picture):
 @app.route('/', methods=['GET'])
 def index():
     db_total = db.total_pictures()
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     recent = list(db.get_recent(24, 0))
     ctx = {
@@ -118,7 +119,7 @@ def photo_list():
     pictures = pictures_for_page(db, page)
     db_total = db.total_pictures()
     paginator = get_paginator(db_total, PAGE_SIZE, page)
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     ctx = {
         'pictures': pictures,
@@ -133,7 +134,7 @@ def photo_list():
 @app.route('/photo/<string:key>/')
 def picture_detail(key):
     picture = db.get_picture(key)
-    tags = db.tags_for_picture(picture['id'])
+    tags = db.tags.for_picture(picture['id'])
     return render_template('detail.html', **{
         'picture': picture,
         'tags': tags,
@@ -141,6 +142,23 @@ def picture_detail(key):
         'flickr': get_flickr_data(picture),
         'gphotos': get_gphotos_data(picture)
     })
+
+
+@app.route('/photo/<string:key>/edit/tags/', methods=['GET', 'POST'])
+def tag_picture(key):
+    picture = db.get_picture(key)
+    if request.method == 'GET':
+        tags = db.tags.for_picture(picture['id'])
+        return render_template('edit_tags.html', **{
+            'picture': picture,
+            'tags': tags,
+            'current_tags': ', '.join(tags)
+        })
+    else:
+        tags = request.form['tags']
+        new_tags = {base.slugify(t) for t in tags.split(',')}
+        db.tags.change_for_picture(picture['id'], new_tags)
+        return redirect(url_for('picture_detail', key=key))
 
 
 @app.route('/photo/<string:key>/blob/')
@@ -158,7 +176,7 @@ def view_tags(tag_list):
     pictures = pictures_for_page(db, page, tags)
     tagged_total = db.total_for_tags(tags)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     ctx = {
         'selected_tags': tags,
@@ -191,7 +209,7 @@ def view_year(year):
     pictures = pictures_for_page(db, page, tags=None, year=year)
     tagged_total = db.total_for_year(year)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
     ctx = {
@@ -219,7 +237,7 @@ def view_month(year, month):
     pictures = db.find_pictures(params, limit, offset)
     tagged_total = db.count_pictures(params)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
     active_days = db.get_days(year, month)
@@ -252,7 +270,7 @@ def view_day(year, month, day):
     pictures = db.find_pictures(params, limit, offset)
     tagged_total = db.count_pictures(params)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
-    all_tags = db.get_tags()
+    all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
     active_days = db.get_days(year, month)

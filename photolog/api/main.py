@@ -1,8 +1,6 @@
 import os
-import re
 import uuid
 import binascii
-import unicodedata
 from hashlib import md5
 from datetime import datetime
 
@@ -13,7 +11,8 @@ from photolog.db import DB
 from photolog.squeue import SqliteQueue
 from photolog.settings import Settings
 from photolog import api_logger as log, settings_file, ALLOWED_FILES
-from photolog.services.base import random_string, start_batch, end_batch
+from photolog.services.base import random_string, start_batch, end_batch, \
+    slugify
 
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
@@ -44,16 +43,6 @@ def crc(file):
     buf = file.read()
     file.seek(0)
     return '%08X' % (binascii.crc32(buf) & 0xFFFFFFFF)
-
-
-def slugify(text):
-    """
-    Slugify inspired in Django's slugify
-    """
-    text = unicodedata.normalize('NFKD', text)
-    text = re.sub('[^\w\s-]', '', text).strip().lower()
-    text = re.sub('[-\s]+', '-', text)
-    return text
 
 
 def filename_for_file(uploaded_file, filename, path):

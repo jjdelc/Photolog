@@ -35,6 +35,47 @@ class BaseDB(object):
         return self._connection_cache[_id]
 
 
+class TagManager:
+    _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
+    _get_tag = 'SELECT id, name FROM tags WHERE name=?'
+    _add_tag = 'INSERT INTO tags (name) VALUES (?)'
+    _clear_picture_tags = 'DELETE FROM tagged_pics WHERE picture_id=?'
+    _pic_tags = ('SELECT name FROM tags WHERE id in '
+                 '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
+    _get_tags = 'SELECT name FROM tags'
+
+    def __init__(self, db):
+        self.db = db
+
+    def add(self, name):
+        with self.db._get_conn() as conn:
+            conn.execute(self._add_tag, [name.lower()])
+
+    def get(self, name):
+        with self.db._get_conn() as conn:
+            matches = list(conn.execute(self._get_tag, [name.lower()]))
+            if not matches:
+                self.add(name)
+                matches = list(conn.execute(self._get_tag, [name.lower()]))
+            return matches[0]
+
+    def all(self):
+        with self.db._get_conn() as conn:
+            return sorted({r['name'] for r in conn.execute(self._get_tags)})
+
+    def change_for_picture(self, picture_id, tags):
+        with self.db._get_conn() as conn:
+            conn.execute(self._clear_picture_tags, [picture_id])
+            for tag in tags:
+                t = self.get(tag)
+                t_id = t['id']
+                conn.execute(self._tag_picture, [t_id, picture_id])
+
+    def for_picture(self, picture_id):
+        with self.db._get_conn() as conn:
+            return [t['name'] for t in conn.execute(self._pic_tags, [picture_id])]
+
+
 class DB(BaseDB):
     _create = (
             'CREATE TABLE IF NOT EXISTS pictures '
@@ -92,15 +133,12 @@ class DB(BaseDB):
     _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
                      'DESC LIMIT ? OFFSET ?'
     _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
-    _get_tags = 'SELECT name FROM tags'
     _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'
     _get_tag = 'SELECT id, name FROM tags WHERE name=?'
     _add_tag = 'INSERT INTO tags (name) VALUES (?)'
     _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
     _tagged_pics = ('SELECT * from pictures where id in '
                     '(SELECT picture_id FROM tagged_pics WHERE tag_id = ?)')
-    _pic_tags = ('SELECT name FROM tags WHERE id in '
-                 '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
     _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
     _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
     _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
@@ -111,6 +149,10 @@ class DB(BaseDB):
     _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
     _last_picture = 'SELECT MAX(id) FROM pictures'
     _file_exists = 'SELECT COUNT(*) count FROM pictures WHERE name=? AND checksum=?'
+
+    @property
+    def tags(self):
+        return TagManager(self)
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
@@ -177,30 +219,19 @@ class DB(BaseDB):
             return conn.execute(self._update_picture % attr, [value, key])
 
     def get_tags(self):
-        with self._get_conn() as conn:
-            return sorted({r['name'] for r in conn.execute(self._get_tags)})
+        return self.tags.all()
 
     def add_tag(self, name):
-        with self._get_conn() as conn:
-            conn.execute(self._add_tag, [name.lower()])
+        self.tags.add(name)
 
     def get_tag(self, name):
-        with self._get_conn() as conn:
-            matches = list(conn.execute(self._get_tag, [name.lower()]))
-            if not matches:
-                self.add_tag(name)
-                matches = list(conn.execute(self._get_tag, [name.lower()]))
-            return matches[0]
+        return self.tags.get(name)
 
     def tagged(self, name):
         tag = self.get_tag(name)
         t_id = tag['id']
         with self._get_conn() as conn:
             return [r for r in conn.execute(self._tagged_pics, [t_id])]
-
-    def tags_for_picture(self, picture_id):
-        with self._get_conn() as conn:
-            return [t['name'] for t in conn.execute(self._pic_tags, [picture_id])]
 
     def get_years(self):
         with self._get_conn() as conn:

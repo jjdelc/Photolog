@@ -1,9 +1,11 @@
 import os
+import re
 import random
 import string
 import piexif
 import shutil
 import exifread
+import unicodedata
 from hashlib import md5
 from functools import partial
 from datetime import datetime
@@ -209,3 +211,12 @@ def file_checksum(filename):
             d.update(buf)
     return d.hexdigest()
 
+
+def slugify(text):
+    """
+    Slugify inspired in Django's slugify
+    """
+    text = unicodedata.normalize('NFKD', text)
+    text = re.sub('[^\w\s-]', '', text).strip().lower()
+    text = re.sub('[-\s]+', '-', text)
+    return text
