@@ -158,7 +158,7 @@ class DB(BaseDB):
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _find_picture = 'SELECT * FROM pictures WHERE %s'
     _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
-                     'DESC LIMIT ? OFFSET ?'
+                     'DESC'
     _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
     _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
     _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
@@ -201,11 +201,18 @@ class DB(BaseDB):
             query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
             return conn.execute(query, values).fetchone()
 
-    def find_pictures(self, params, limit, offset):
+    def find_pictures(self, params, limit=None, offset=None):
         with self._get_conn() as conn:
             fields, values = zip(*params.items())
             query = self._find_pictures % ' AND '.join('%s = ?' % f for f in fields)
-            return conn.execute(query, list(values) + [limit, offset])
+            params = []
+            if limit:
+                query += ' LIMIT ?'
+                params.append(limit)
+            if offset:
+                query += ' OFFSET ?'
+                params.append(offset)
+            return conn.execute(query, list(values) + params)
 
     def count_pictures(self, params):
         with self._get_conn() as conn:
