@@ -243,8 +243,8 @@ class TagDayJob(BaseJob):
             'month': data['month'],
             'day': data['day']
         })
-        log.info("Tagging day: %s-%s-%s" % (data['year'], data['month'],
-                                            data['day']))
+        log.info("Tagging day: %s-%s-%s (%s pictures)" % (data['year'],
+            data['month'], data['day'], len(pictures)))
         tags = data['tags']
         for picture in pictures:
             self.db.tags.change_for_picture(picture['id'], tags)
