@@ -9,16 +9,14 @@
      - <abbr title="{{ picture.size }} bytes">{{ human_size }}</abbr></span>
     </p>
     <time>
-        <a href="{{ url_for('view_year', year=picture.year) }}">{{ picture.year }}</a>
-        - <a href="{{ url_for('view_month', year=picture.year,month=picture.month) }}">{{ picture.month }}</a>
-        - <a href="{{ url_for('view_day', year=picture.year,month=picture.month,day=picture.day) }}">{{ picture.month }}</a>
-        </time>
+        <a href="{{ url_for('view_year', year=picture.year) }}">{{ picture.year }}</a>-<a href="{{ url_for('view_month', year=picture.year,month=picture.month) }}">{{ picture.month }}</a>-<a href="{{ url_for('view_day', year=picture.year,month=picture.month,day=picture.day) }}">{{ picture.day }}</a>
+    </time>
 </figcaption>
 </figure>
 
 <section class="extra-info">
 <dl>
-<dt>Tagged</dt>
+<dt>Tagged (<a class="edit-tags" href="{{ url_for('tag_picture', key=picture.key) }}">Edit</a>)</dt>
 <dd><ul class="tag-list">
 {% for tag in tags %}
     <li>
