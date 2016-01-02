@@ -1,5 +1,6 @@
 import math
 import json
+import uuid
 from io import StringIO
 from datetime import datetime
 import xml.etree.ElementTree as etree
@@ -287,6 +288,45 @@ def view_day(year, month, day):
         'day': day
     }
     return render_template('photo_list.html', **ctx)
+
+
+@app.route('/date/<int:year>/<int:month>/<int:day>/tags/', methods=['GET', 'POST'])
+def tag_day(year, month, day):
+    month = '%02d' % month
+    day = '%02d' % day
+    year = str(year)
+    params = {
+        'year': year,
+        'month': month,
+        'day': day
+    }
+    total = db.count_pictures(params)
+    if request.method == 'GET':
+        return render_template('edit_day_tags.html', **{
+            'total': total,
+            'year': year,
+            'month': month,
+            'day': day
+        })
+    else:
+        tags = request.form['tags']
+        new_tags = {base.slugify(t) for t in tags.split(',')}
+        if new_tags:
+            tag_day_job(year, month, day, new_tags)
+        return redirect(url_for('view_day', year=int(year), month=int(month),
+            day=int(day)))
+
+
+def tag_day_job(year, month, day, tags):
+    queue.append({
+        'type': 'tag-day',
+        'key': uuid.uuid4().hex,
+        'year': year,
+        'month': month,
+        'day': day,
+        'tags': tags,
+        'attempt': 0
+    })
 
 
 def serial_job(obj):

@@ -84,5 +84,8 @@
 {% endfor %}
 </ul>
 <p>Total images: {{ total }}</p>
+{% if day %}
+<p><a class="edit-tags" href="{{ url_for('tag_day', year=year, month=month, day=day) }}">Tag day</a> </p>
+{% endif %}
 </section>
 {% endblock %}

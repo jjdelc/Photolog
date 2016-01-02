@@ -4,6 +4,7 @@
 <table class="jobs">
 <thead>
 <tr>
+    <th>Type</th>
     <th>Key</th>
     <th>File</th>
     <th>Step</th>
@@ -13,6 +14,7 @@
 <tbody>
 {% for job in jobs %}
 <tr>
+<td>{{ job.type }}</td>
 <td>{{ job.key }}</td>
 <td>{{ job.filename }}</td>
 <td>{{ job.step }}</td>
