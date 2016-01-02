@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="extra-info">
+<form method="post">
+    <p><label for="id_keys">Pictures to tag</label><br/><textarea
+            placeholder="One URL or Key per line"
+            id="id_keys" name="keys"
+            rows="10" cols="30"></textarea></p>
+    <p><label for="id_new_tags">Change tags</label><br/>
+        <input type="text" id="id_new_tags" name="tags" value="" placeholder="Comma separated"/>
+        <input type="submit" value="Change">
+    </p>
+</form>
+</section>
+{% endblock %}

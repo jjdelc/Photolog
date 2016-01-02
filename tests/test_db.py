@@ -106,3 +106,21 @@ class TestDB(TestCase):
         }, ['phone', 'travel'])
         self.assertTrue(db.file_exists('name', 'checksum'))
         self.assertFalse(db.file_exists('name', 'not checksum'))
+
+    def test_by_keys(self):
+        db_file = os.path.join(TEST_FILES, 'test_by_keys.db')
+        db = DB(db_file)
+        db.add_picture({
+            'key': '1',
+            'name': 'one',
+        }, [])
+        db.add_picture({
+            'key': '2',
+            'name': 'two',
+        }, [])
+        db.add_picture({
+            'key': '3',
+            'name': 'three',
+        }, [])
+        self.assertEqual({p['name'] for p in db.pictures.by_keys(['1', '2'])},
+            {'one', 'two'})

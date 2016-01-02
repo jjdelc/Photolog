@@ -170,6 +170,29 @@ def picture_detail_blob(key):
     })
 
 
+def get_key(url):
+    return url.split('/')[-2]
+
+
+@app.route('/tags/edit/', methods=['GET', 'POST'])
+def mass_tag():
+    if request.method == 'GET':
+        return render_template('mass_tag.html')
+    else:
+        keys = [get_key(k.strip()) for k in request.form['keys'].split()]
+        tags = request.form['tags']
+        new_tags = {base.slugify(t) for t in tags.split(',')}
+        if new_tags and keys:
+            queue.append({
+                'type': 'mass-tag',
+                'key': uuid.uuid4().hex,
+                'keys': keys,
+                'tags': new_tags,
+                'attempt': 0
+            })
+        return redirect('/')
+
+
 @app.route('/tags/<string:tag_list>/')
 def view_tags(tag_list):
     page = int(request.args.get('page', '1'))

@@ -251,13 +251,29 @@ class TagDayJob(BaseJob):
         log.info("Done")
 
 
+class MassTagJob(BaseJob):
+    """
+    This job will receive a year/month/day and change the tags
+    of all pictures on that date for the new ones.
+    """
+    def process(self):
+        data = self.data
+        pictures = list(self.db.pictures.by_keys(data['keys']))
+        log.info("Tagging %s pictures" % len(pictures))
+        tags = data['tags']
+        for picture in pictures:
+            self.db.tags.change_for_picture(picture['id'], tags)
+        log.info("Done")
+
+
 upload_formats = [
     (ImageJob, IMAGE_FILES),
     (RawFileJob, RAW_FILES)
 ]
 
 job_types = {
-    'tag-day': TagDayJob
+    'tag-day': TagDayJob,
+    'mass-tag': MassTagJob,
 }
 
 

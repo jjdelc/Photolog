@@ -95,6 +95,7 @@ class TagManager:
     def tagged_pictures(self, tags, limit, offset):
         with self.db._get_conn() as conn:
             tag_ids = [str(t['id'])
+                       # This usage of IN statement is wrong, look at by_keys()
                        for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
             return conn.execute(self._get_tagged_pictures,
                 (', '.join(tag_ids), limit, offset))
@@ -102,8 +103,21 @@ class TagManager:
     def total_for_tags(self, tags):
         with self.db._get_conn() as conn:
             tag_ids = [str(t['id'])
+                       # This usage of IN statement is wrong, look at by_keys()
                        for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
             return conn.execute(self._total_for_tags, [', '.join(tag_ids)]).fetchone()['count']
+
+
+class PictureManager:
+    _by_keys = 'SELECT * FROM pictures WHERE key IN (%s)'
+
+    def __init__(self, db):
+        self.db = db
+
+    def by_keys(self, keys):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._by_keys % ','.join('?' * len(keys)),
+                keys)
 
 
 class DB(BaseDB):
@@ -172,6 +186,10 @@ class DB(BaseDB):
     @property
     def tags(self):
         return TagManager(self)
+
+    @property
+    def pictures(self):
+        return PictureManager(self)
 
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
