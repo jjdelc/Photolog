@@ -10,19 +10,28 @@ def job_fname(job, settings):
 
 class BaseJob(object):
     steps = {}
-    format = 'image'
 
     def __init__(self, job_data, db, settings):
         self.data = job_data
         self.key = job_data['key']
+        self.settings = settings
+        self.db = db
+
+    def process(self):
+        raise NotImplemented
+
+
+class BaseUploadJob(BaseJob):
+    format = 'image'
+
+    def __init__(self, job_data, db, settings):
+        super(BaseUploadJob, self).__init__(job_data, db, settings)
         # Contains only name/extension with unique hash - Refers to file on disk
         self.filename = job_data['filename']
         # Original filename of the file uploaded on remove system
         self.original_filename = job_data['original_filename']
         # Full file path of uploaded original file locally
         self.full_filepath = job_fname(job_data, settings)
-        self.settings = settings
-        self.db = db
 
     def _read_exif(self):
         upload_date = self.data['uploaded_at']
@@ -92,7 +101,7 @@ class BaseJob(object):
         return job
 
 
-class ImageJob(BaseJob):
+class ImageJob(BaseUploadJob):
     steps = {  # Step function, Next job
         'upload_and_store': ('local_process', 'flickr'),
         'flickr': ('flickr_upload', 'gphotos'),
@@ -149,7 +158,7 @@ class ImageJob(BaseJob):
         return self.data
 
 
-class RawFileJob(BaseJob):
+class RawFileJob(BaseUploadJob):
     steps = {  # Step function, Next job
         'upload_and_store': ('local_process', 'finish'),
         'finish': ('finish_job', None)
@@ -222,17 +231,41 @@ class RawFileJob(BaseJob):
         return self.data
 
 
-job_types = [
+class TagDayJob(BaseJob):
+    """
+    This job will receive a year/month/day and change the tags
+    of all pictures on that date for the new ones.
+    """
+    def process(self):
+        data = self.data
+        pictures = self.db.find_pictures({
+            'year': data['year'],
+            'month': data['month'],
+            'day': data['day']
+        })
+        tags = data['tags']
+        for picture in pictures:
+            self.db.tags.change_for_picture(picture['id'], tags)
+
+
+upload_formats = [
     (ImageJob, IMAGE_FILES),
     (RawFileJob, RAW_FILES)
 ]
 
+job_types = {
+    'tag-day': TagDayJob
+}
+
 
 def prepare_job(job, db, settings):
-    filename = job_fname(job, settings)
-    name, ext = os.path.splitext(filename)
-    ext = ext.lstrip('.').lower()
-    for cls, types in job_types:
-        if ext in types:
-            return cls(job, db, settings)
-    # Then what?
+    if job['type'] == 'upload':
+        filename = job_fname(job, settings)
+        name, ext = os.path.splitext(filename)
+        ext = ext.lstrip('.').lower()
+        for cls, types in upload_formats:
+            if ext in types:
+                return cls(job, db, settings)
+
+    cls = job_types[job['type']]
+    return cls(job, db, settings)

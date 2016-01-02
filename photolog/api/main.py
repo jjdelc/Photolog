@@ -57,6 +57,7 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip,
 
     uploaded_file.save(os.path.join(_settings.UPLOAD_FOLDER, filename))
     _queue.append({
+        'type': 'upload',
         'key': uuid.uuid4().hex,
         'filename': filename,
         'tags': tags,
