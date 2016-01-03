@@ -46,6 +46,8 @@ The Yaml file should have the following keys:
 ```
 UPLOAD_FOLDER: <directory for tmp uploads>
 DB_FILE: <Sqlite db file>
+API_SECRET: <arbitraty string of your choice>
+
 S3_ACCESS_KEY: <AWS Access>
 S3_SECRET_KEY: <AWS Secret>
 S3_BUCKET: <Bucket name>
@@ -117,17 +119,51 @@ Will print a url of the shape:
 Paste that in your browser, accept and you will see the app access code. You 
 should put that in your `GPHOTOS_ACCESS_CODE` setting. 
 
-# Usage
+# Uploading pictures
+
+You can use the main `upload2photolog` command to get your pictures on your server.
+It will handle many things.
+
+## Configuration
+
+The best way to have it ready is to create a file under `~/.photolog` with the 
+following:
+
+```
+host: <http://upload.host.com>
+halt: <boolean>
+secret: <same secret from API settings>
+```
+
+* host: Should point to the host where the API is installed. Should not include
+any path from the API. If you installed it under `photos.domain.com` then you 
+should have `http://photos.domain.com`.
+* halt: Boolean, if true, the upload command will not break in case of a failed 
+upload due bad connection, but will wait for user input to resume or cancel. This 
+is very useful when performing huge uploads.
+* secret: Same string you used on your API settings configuration, just to prevent
+bare HTTP calls from going through and avoid accidents in case you have many
+endpoints configured (my case during development)
+
+## Usage
+
+Then, you can use it like so:
+
+> upload2photolog dir1 dir2 file1 file2 --tags 'tag1,tag2' --skip 'google,flickr'
+
+And it will do its thing.
+
+## Raw HTTP usage
 
 Upload a picture to the upload endpoint:
-> curl -X POST -F "photo_file=@DSC00647.JPG" http://localhost:5000/photos/
+> curl -X POST -F "photo_file=@DSC00647.JPG" -F "secret={{md5(secret)}}" http://localhost:5000/photos/
 
 Use the `tags` field to tag it:
-> curl -X POST -F "photo_file=@DSC00647.JPG" -F "tags=vegas,travel" http://localhost:5000/photos/
+> curl -X POST -F "photo_file=@DSC00647.JPG" -F "secret={{md5(secret)}}" -F "tags=vegas,travel" http://localhost:5000/photos/
 
 Or skip steps of the processing, in case you don't want your phone pictures
 uploaded to Gphotos again ("gphotos" or "flickr"):
-> curl -X POST -F "photo_file=@DSC00647.JPG" -F "skip=gphotos" http://localhost:5000/photos/
+> curl -X POST -F "photo_file=@DSC00647.JPG" -F "secret={{md5(secret)}}" -F "skip=gphotos" http://localhost:5000/photos/
 
 They will be added to the queue and processed sequentially. Will be available
 from your web interface.
