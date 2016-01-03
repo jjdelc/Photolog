@@ -277,7 +277,7 @@ job_types = {
 
 
 def prepare_job(job, db, settings):
-    if job['type'] == 'upload':
+    if job.get('type', 'upload') == 'upload':
         filename = job_fname(job, settings)
         name, ext = os.path.splitext(filename)
         ext = ext.lstrip('.').lower()
