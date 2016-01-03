@@ -238,11 +238,11 @@ class TagDayJob(BaseJob):
     """
     def process(self):
         data = self.data
-        pictures = self.db.find_pictures({
+        pictures = list(self.db.find_pictures({
             'year': data['year'],
             'month': data['month'],
             'day': data['day']
-        })
+        }))
         log.info("Tagging day: %s-%s-%s (%s pictures)" % (data['year'],
             data['month'], data['day'], len(pictures)))
         tags = data['tags']
