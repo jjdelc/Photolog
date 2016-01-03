@@ -253,8 +253,7 @@ class TagDayJob(BaseJob):
 
 class MassTagJob(BaseJob):
     """
-    This job will receive a year/month/day and change the tags
-    of all pictures on that date for the new ones.
+    Will receive a list of picture keys and change tags for each of them.
     """
     def process(self):
         data = self.data
