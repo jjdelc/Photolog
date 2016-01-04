@@ -5,6 +5,7 @@ from unittest import TestCase
 
 import shutil
 from photolog.db import DB
+from photolog.squeue import SqliteQueue
 
 TESTS_DIR = os.path.dirname(__file__)
 
@@ -22,3 +23,8 @@ class TestDbBase(TestCase):
         db = DB(db_file)
         return db
 
+
+class QueueMixin:
+    def get_queue(self, name):
+        queue = SqliteQueue(os.path.join(TEST_FILES, name))
+        return queue
