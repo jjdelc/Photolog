@@ -1,29 +1,15 @@
-# coding: utf-8
-
-from unittest import TestCase
-
-import os
-import shutil
-from photolog.db import DB
-from . import TEST_FILES
+from . import TestDbBase
 
 
-class TestDB(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        shutil.rmtree(TEST_FILES)
-        os.makedirs(TEST_FILES)
-
+class TestDB(TestDbBase):
     def test_get_tags(self):
-        db_file = os.path.join(TEST_FILES, 'test_get_tags.db')
-        db = DB(db_file)
+        db = self.get_db('test_get_tags.db')
         db.tags.add('tag1')
         db.tags.add('tag2')
         self.assertEqual(db.tags.all(), ['tag1', 'tag2'])
 
     def test_add_picture(self):
-        db_file = os.path.join(TEST_FILES, 'test_add_picture.db')
-        db = DB(db_file)
+        db = self.get_db('test_add_picture.db')
         db.add_picture({
             'original': 'original.jpg'
         }, ['phone', 'travel'])
@@ -42,8 +28,7 @@ class TestDB(TestCase):
         })
 
     def test_update_picture(self):
-        db_file = os.path.join(TEST_FILES, 'test_update_picture.db')
-        db = DB(db_file)
+        db = self.get_db('test_update_picture.db')
         key = 'test_update_picture'
 
         attr = 'flickr'
@@ -57,8 +42,7 @@ class TestDB(TestCase):
         self.assertEqual(pic[attr], value)
 
     def test_find_picture(self):
-        db_file = os.path.join(TEST_FILES, 'test_find_picture.db')
-        db = DB(db_file)
+        db = self.get_db('test_find_picture.db')
         db.add_picture({
             'original': 'original.jpg',
             'name': 'name',
@@ -97,8 +81,7 @@ class TestDB(TestCase):
         self.assertIsNone(found)
 
     def test_file_exists(self):
-        db_file = os.path.join(TEST_FILES, 'test_file_exists.db')
-        db = DB(db_file)
+        db = self.get_db('test_file_exists.db')
         db.add_picture({
             'original': 'original.jpg',
             'checksum': 'checksum',
@@ -108,8 +91,7 @@ class TestDB(TestCase):
         self.assertFalse(db.file_exists('name', 'not checksum'))
 
     def test_by_keys(self):
-        db_file = os.path.join(TEST_FILES, 'test_by_keys.db')
-        db = DB(db_file)
+        db = self.get_db('test_by_keys.db')
         db.add_picture({
             'key': '1',
             'name': 'one',
