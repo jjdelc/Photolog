@@ -40,7 +40,8 @@ def random_string(size=6):
 
 def read_rotation(img_data):
     try:
-        exif = dict(img_data._getexif().items())
+        data = img_data._getexif() or {ORIENTATION_EXIF: 0}
+        exif = dict(data.items())
     except ZeroDivisionError:
         # Error reading Exif :(
         return 0
@@ -95,7 +96,10 @@ TIME_FORMAT = '%Y:%m:%d %H:%M:%S'
 
 def taken_timestamp(time_string, exif):
     try:
-        dt = datetime.strptime(time_string, TIME_FORMAT)
+        if time_string:
+            dt = datetime.strptime(time_string, TIME_FORMAT)
+        else:
+            raise ValueError
     except ValueError:
         # Could not get a date... then what? Use base day
         dt = datetime(exif['year'], exif['month'], exif['day'])
