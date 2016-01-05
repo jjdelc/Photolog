@@ -399,7 +399,6 @@ def purge_all():
 def purge_bad_job():
     key = request.form['job_key']
     for bj in queue.get_bad_jobs_raw():
-        print(bj)
         if bj[1]['key'] == key:
             queue.purge_bad_job(bj[0])
             break
