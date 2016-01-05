@@ -30,6 +30,7 @@ class SqliteQueue(object):
     _append = 'INSERT INTO queue (item) VALUES (?)'
     _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
     _bad_jobs = 'SELECT item FROM bad_jobs ORDER BY id DESC LIMIT ?'
+    _bad_jobs_raw = 'SELECT * FROM bad_jobs'
     _write_lock = 'BEGIN IMMEDIATE'
     _popleft_get = (
             'SELECT id, item FROM queue '
@@ -39,6 +40,7 @@ class SqliteQueue(object):
     _peek = 'SELECT item FROM queue ORDER BY id LIMIT ?'
     _retry = 'INSERT INTO queue(item) SELECT item FROM bad_jobs'
     _drop_bad = 'DELETE FROM bad_jobs'
+    _purge_bad = 'DELETE from bad_jobs WHERE id=?'
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -78,6 +80,15 @@ class SqliteQueue(object):
         with self._get_conn() as conn:
             return [loads(obj_buffer[0])
                     for obj_buffer in conn.execute(self._bad_jobs, [limit])]
+
+    def get_bad_jobs_raw(self):
+        with self._get_conn() as conn:
+            return [(obj_buffer[0], loads(obj_buffer[1]))
+                    for obj_buffer in conn.execute(self._bad_jobs_raw)]
+
+    def purge_bad_job(self, item_id):
+        with self._get_conn() as conn:
+            conn.execute(self._purge_bad, [item_id])
 
     def total_bad_jobs(self):
         with self._get_conn() as conn:

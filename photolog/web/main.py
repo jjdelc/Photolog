@@ -367,13 +367,13 @@ def view_queue():
     )
 
 
-@app.route('/bad_jobs/', methods=['POST'])
+@app.route('/jobs/bad/', methods=['POST'])
 def retry_jobs():
     queue.retry_jobs()
     return redirect('/jobs/')
 
 
-@app.route('/bad_jobs/', methods=['GET'])
+@app.route('/jobs/bad/', methods=['GET'])
 def bad_jobs():
     result = queue.get_bad_jobs()
     total_jobs = queue.total_bad_jobs()
@@ -382,6 +382,22 @@ def bad_jobs():
                   for job in result],
         total_jobs=total_jobs
     )
+
+
+@app.route('/jobs/bad/purge/', methods=['GET'])
+def purge_form():
+    return render_template('purge_jobs.html')
+
+
+@app.route('/jobs/bad/purge/', methods=['POST'])
+def purge_bad_job():
+    key = request.form['job_key']
+    for bj in queue.get_bad_jobs_raw():
+        print(bj)
+        if bj[1]['key'] == key:
+            queue.purge_bad_job(bj[0])
+            break
+    return redirect('/jobs/bad/')
 
 
 def start():

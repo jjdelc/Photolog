@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="extra-info">
+<h1>Delete bad job from queue</h1>
+<form method="post">
+    <p><label for="job_key">Job Key to delete</label>
+        <input type="text" id="job_key" name="job_key" value="" placeholder="Bad job key"/>
+        <input type="submit" value="Delete">
+    </p>
+</form>
+</section>
+{% endblock %}
