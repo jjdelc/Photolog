@@ -170,7 +170,7 @@ def run():
     parser = argparse.ArgumentParser(
         description="Upload files or directories to Photolog"
     )
-    parser.add_argument('directories', type=str, nargs='?',
+    parser.add_argument('directories', type=str, nargs='+',
         help="Directory to upload")
     parser.add_argument('--filelist', metavar='T', nargs='?', type=str,
         help="Tags for this batch")
