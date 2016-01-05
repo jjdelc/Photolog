@@ -88,6 +88,9 @@ class TagManager:
     def tag_picture(self, picture_id, tags):
         with self.db._get_conn() as conn:
             for tag in tags:
+                tag = tag.strip()
+                if not tag:
+                    continue
                 t = self.get(tag)
                 t_id = t['id']
                 conn.execute(self._tag_picture, [t_id, picture_id])
