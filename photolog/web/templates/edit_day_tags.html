@@ -4,7 +4,7 @@
 <h1>Change tags for all pics in: <a href="{{ url_for('view_day', year=year, month=month, day=day) }}">{{ year }}-{{ month }}-{{ day }}</a></h1>
 <form method="post">
     <p><label for="id_current_tags">Change tags</label>
-        <input type="text" id="id_current_tags" name="tags" value="{{ current_tags }}"/>
+        <input focus type="text" id="id_current_tags" name="tags" value="{{ current_tags }}"/>
         <input type="submit" value="Change">
     </p>
 </form>
