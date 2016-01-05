@@ -181,7 +181,7 @@ def mass_tag():
     else:
         keys = [get_key(k.strip()) for k in request.form['keys'].split()]
         tags = request.form['tags']
-        new_tags = {base.slugify(t) for t in tags.split(',')}
+        new_tags = {base.slugify(t) for t in tags.split(',') if t.strip()}
         if new_tags and keys:
             queue.append({
                 'type': 'mass-tag',
@@ -333,7 +333,7 @@ def tag_day(year, month, day):
         })
     else:
         tags = request.form['tags']
-        new_tags = {base.slugify(t) for t in tags.split(',')}
+        new_tags = {base.slugify(t) for t in tags.split(',') if t.strip()}
         if new_tags:
             tag_day_job(year, month, day, new_tags)
         return redirect(url_for('view_day', year=int(year), month=int(month),
