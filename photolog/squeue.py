@@ -90,6 +90,10 @@ class SqliteQueue(object):
         with self._get_conn() as conn:
             conn.execute(self._purge_bad, [item_id])
 
+    def purge_all_bad(self):
+        with self._get_conn() as conn:
+            conn.execute(self._drop_bad)
+
     def total_bad_jobs(self):
         with self._get_conn() as conn:
             return conn.execute(self._count_bad).fetchone()[0]

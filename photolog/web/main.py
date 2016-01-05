@@ -389,6 +389,12 @@ def purge_form():
     return render_template('purge_jobs.html')
 
 
+@app.route('/jobs/bad/purge/all/', methods=['POST'])
+def purge_all():
+    queue.purge_all_bad()
+    return redirect('/jobs/bad/')
+
+
 @app.route('/jobs/bad/purge/', methods=['POST'])
 def purge_bad_job():
     key = request.form['job_key']
