@@ -93,7 +93,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
     raise requests.ConnectionError('Could not connect to %s' % host)
 
 
-def upload_directories(targets, host, secret, tags, skip, halt):
+def upload_directories(targets, filelist, host, secret, tags, skip, halt):
     start = time()
     first_batch, second_batch = [], []
     for target in targets:
@@ -119,6 +119,17 @@ def upload_directories(targets, host, secret, tags, skip, halt):
             elif ext in RAW_FILES:
                 second_batch.append((target, full_file))
 
+    for target in filelist:
+        name, ext = os.path.splitext(target)
+        ext = ext.lstrip('.').lower()
+        full_file = os.path.abspath(target)
+        if ext not in ALLOWED_FILES:
+            continue
+        if ext in IMAGE_FILES:
+            first_batch.append((target, full_file))
+        elif ext in RAW_FILES:
+            second_batch.append((target, full_file))
+
     n, skipped = 1, 0
     total_files = len(first_batch) + len(second_batch)
     log.info('Found %s files' % total_files)
@@ -137,13 +148,23 @@ def upload_directories(targets, host, secret, tags, skip, halt):
     log.info('Uploaded %s files in %.2fs' % (total_files, elapsed))
 
 
+def read_filelist(filelist):
+    if not filelist:
+        return []
+
+    with open(filelist) as fl:
+        return [line.strip() for line in fl if os.path.isfile(line.strip())]
+
+
 def run():
     config = read_local_conf()
     parser = argparse.ArgumentParser(
         description="Upload files or directories to Photolog"
     )
-    parser.add_argument('directories', type=str, nargs='+',
+    parser.add_argument('directories', type=str, nargs='?',
         help="Directory to upload")
+    parser.add_argument('--filelist', metavar='T', nargs='?', type=str,
+        help="Tags for this batch")
     parser.add_argument('--tags', metavar='T', nargs='?', type=str,
         help="Tags for this batch")
     parser.add_argument('--host', metavar='H', nargs='?', type=str,
@@ -151,13 +172,14 @@ def run():
     parser.add_argument('--skip', nargs='?', type=str,
         help="steps to skip")
     parsed = parser.parse_args()
-    directories = [os.path.realpath(d) for d in parsed.directories]
+    directories = [os.path.realpath(d) for d in (parsed.directories or [])]
     halt = config.get('halt', False)
     host = parsed.host or config['host']
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
     tags = parsed.tags or ''
     skip = parsed.skip or ''
-    upload_directories(directories, host, secret, tags, skip, halt)
+    filelist = read_filelist(parsed.filelist)
+    upload_directories(directories, filelist, host, secret, tags, skip, halt)
 
 
 if __name__ == '__main__':
