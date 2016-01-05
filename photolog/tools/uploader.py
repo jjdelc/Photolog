@@ -49,6 +49,11 @@ def verify_exists(host, full_filepath, secret):
     return response.status_code == 204
 
 
+def validate_file(filename):
+    if os.stat(filename).st_size < 1024:  # Too small for a valid photo
+        raise OSError('Invalid file')
+
+
 def handle_file(host, full_file, secret, tags, skip, halt):
     """
     :param host: Host to upload data to
@@ -65,6 +70,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
         attempt = 1
         while attempt < UPLOAD_ATTEMPTS:
             try:
+                validate_file(full_file)
                 file_exists = verify_exists(host, full_file, secret)
                 endpoint = urljoin(host, '/photos/')
                 if file_exists:
@@ -85,6 +91,9 @@ def handle_file(host, full_file, secret, tags, skip, halt):
             except requests.ConnectionError:
                 attempt += 1
                 log.warning("Attempt %s. Failed to connect. Retrying" % attempt)
+            except OSError:
+                log.warning("Invalid file: %s - Skipping" % full_file)
+                return False
 
         if halt:
             answer = input("Problem connecting, Continue? [Y, n]") or 'Y'
