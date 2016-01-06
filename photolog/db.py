@@ -113,6 +113,8 @@ class TagManager:
 
 class PictureManager:
     _by_keys = 'SELECT * FROM pictures WHERE key IN (%s)'
+    _change_date = 'UPDATE pictures SET year=?, month=?, day=?, taken_time=?,' \
+                   ' date_taken=? WHERE key =?'
 
     def __init__(self, db):
         self.db = db
@@ -121,6 +123,15 @@ class PictureManager:
         with self.db._get_conn() as conn:
             return conn.execute(self._by_keys % ','.join('?' * len(keys)),
                 keys)
+
+    def change_date(self, picture_key, date_struct):
+        with self.db._get_conn() as conn:
+            conn.execute(self._change_date, [date_struct['year'],
+                                             date_struct['month'],
+                                             date_struct['day'],
+                                             date_struct['taken_time'],
+                                             date_struct['date_taken'],
+                                             picture_key])
 
 
 class DB(BaseDB):

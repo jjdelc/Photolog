@@ -174,7 +174,7 @@ def get_key(url):
     return url.split('/')[-2]
 
 
-@app.route('/tags/edit/', methods=['GET', 'POST'])
+@app.route('/edit/tags/', methods=['GET', 'POST'])
 def mass_tag():
     if request.method == 'GET':
         return render_template('mass_tag.html')
@@ -191,6 +191,27 @@ def mass_tag():
                 'attempt': 0
             })
         return redirect('/')
+
+
+@app.route('/edit/dates/', methods=['GET', 'POST'])
+def edit_dates():
+    if request.method == 'GET':
+        return render_template('edit_dates.html')
+    else:
+        changes = []
+        for field_n in range(1, 9):
+            key = request.form.get('key_%s' % field_n)
+            date = request.form.get('date_%s' % field_n)
+            if key and date:
+                changes.append((key.strip(), datetime.strptime(date, '%Y-%m-%d')))
+        if changes:
+            queue.append({
+                'type': 'edit-dates',
+                'key': uuid.uuid4().hex,
+                'changes': changes,
+                'attempt': 0
+            })
+        return redirect('/edit/dates/')
 
 
 @app.route('/tags/<string:tag_list>/')

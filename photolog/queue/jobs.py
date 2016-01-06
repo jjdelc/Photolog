@@ -1,5 +1,6 @@
 import os
 import json
+from time import mktime
 from photolog.services import s3, gphotos, flickr, base
 from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES
 
@@ -265,6 +266,26 @@ class MassTagJob(BaseJob):
         log.info("Done")
 
 
+class EditDatesJob(BaseJob):
+    """
+    Will receive a list of picture keys and change tags for each of them.
+    """
+    def process(self):
+        changes = self.data['changes']
+        keys, dates = zip(*changes)
+        pictures = {p['key']: p for p in self.db.pictures.by_keys(keys)}
+        log.info("Changing dates for %s pictures" % len(pictures))
+        for key, date in changes:
+            self.db.pictures.change_date(key, {
+                'year': '%04d' % date.year,
+                'month': '%02d' % date.month,
+                'day': '%02d' % date.day,
+                'taken_time': mktime(date.timetuple()),
+                'date_taken': date.strftime('%Y-%m-%d')
+            })
+        log.info("Done")
+
+
 upload_formats = [
     (ImageJob, IMAGE_FILES),
     (RawFileJob, RAW_FILES)
@@ -273,6 +294,7 @@ upload_formats = [
 job_types = {
     'tag-day': TagDayJob,
     'mass-tag': MassTagJob,
+    'edit-dates': EditDatesJob
 }
 
 
