@@ -431,6 +431,17 @@ def purge_bad_job():
     return redirect('/jobs/bad/')
 
 
+@app.route('/search/')
+def search():
+    name = request.args.get('name')
+    if name:
+        pic = db.pictures.find_one({
+            'name': name
+        })
+        return redirect(url_for('picture_detail', key=pic['key']))
+    return render_template('search.html')
+
+
 def start():
     log.info('Starting WEB server')
     app.run(debug=settings.DEBUG, port=5001, host='0.0.0.0')
