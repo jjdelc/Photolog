@@ -53,7 +53,6 @@ def migrate(conn):
     conn.executescript(SCRIPT)
 
 
-
 if __name__ == '__main__':
     db = DB(DB_FILE)
     with db._get_conn() as conn:
