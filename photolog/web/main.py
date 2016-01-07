@@ -2,8 +2,8 @@ import math
 import json
 import uuid
 from io import StringIO
-from datetime import datetime
 import xml.etree.ElementTree as etree
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for
 
 from photolog import web_logger as log, settings_file
@@ -244,17 +244,19 @@ def view_tags(tag_list):
     return render_template('photo_list.html', **ctx)
 
 
-def months_tags(months):
+def months_tags(months, month):
     return [{
         'month': '%02d' % m,
-        'has_data': m in months
+        'has_data': m in months,
+        'current': m == month
     } for m in range(1, 13)]
 
 
-def days_tags(days):
+def days_tags(days, current):
     return [{
         'day': '%02d' % d,
-        'has_data': d in days
+        'has_data': d in days,
+        'current': d == current
     } for d in range(1, 32)]
 
 
@@ -273,7 +275,7 @@ def view_year(year):
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'months': months_tags(present_months),
+        'months': months_tags(present_months, 0),
         'years': years
     }
     return render_template('photo_list.html', **ctx)
@@ -301,8 +303,8 @@ def view_month(year, month):
         'total': tagged_total,
         'year': year,
         'month': '%02d' % month,
-        'months': months_tags(present_months),
-        'days': days_tags(active_days),
+        'months': months_tags(present_months, month),
+        'days': days_tags(active_days, 0),
         'years': years
     }
     return render_template('photo_list.html', **ctx)
@@ -324,6 +326,9 @@ def view_day(year, month, day):
     years = db.get_years()
     present_months = db.get_months(year)
     active_days = db.get_days(year, month)
+    this_day = datetime(year, month, day)
+    yesterday = this_day + timedelta(-1)
+    tomorrow = this_day + timedelta(1)
     ctx = {
         'all_tags': all_tags,
         'pictures': pictures,
@@ -331,10 +336,12 @@ def view_day(year, month, day):
         'total': tagged_total,
         'year': year,
         'month': '%02d' % month,
-        'months': months_tags(present_months),
-        'days': days_tags(active_days),
+        'day': '%02d' % day,
         'years': years,
-        'day': '%02d' % day
+        'months': months_tags(present_months, month),
+        'days': days_tags(active_days, day),
+        'tomorrow': tomorrow,
+        'yesterday': yesterday,
     }
     return render_template('photo_list.html', **ctx)
 

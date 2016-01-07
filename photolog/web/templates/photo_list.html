@@ -4,6 +4,11 @@
     &raquo; <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
     {% if month %}/ <a href="{{ url_for('view_month', year=year, month=month) }}">{{ month }}</a>{% endif %}
     {% if day %}/ <a href="{{ url_for('view_day', year=year, month=month, day=day) }}">{{ day }}</a>{% endif %}
+    {% if day %}
+        &nbsp;&nbsp;<i class="fa fa-calendar"></i>
+        <a href="{{ url_for('view_day', year=yesterday.year, month=yesterday.month, day=yesterday.day) }}"><i class="fa fa-chevron-left"></i></a>
+        <a href="{{ url_for('view_day', year=tomorrow.year, month=tomorrow.month, day=tomorrow.day) }}"><i class="fa fa-chevron-right"></i></a>
+    {% endif %}
 {% endif %}
 {% if selected_tags %}
     &raquo; {{ ' - '.join(selected_tags) }}
@@ -39,13 +44,14 @@
     </form></li>
 </ol>
 <section class="extra-info">
-<h2>Year/Tags</h2>
+<h2>Navigate</h2>
 {% if days %}
 <ul class="tag-list">
 {% for day in days %}
     <li>
     {% if day.has_data %}
-    <a href="{{ url_for('view_day', year=year, month=month, day=day.day) }}">{{ day.day }}</a>
+    <a {% if day.current %}class="current"{% endif %}
+            href="{{ url_for('view_day', year=year, month=month, day=day.day) }}">{{ day.day }}</a>
     {% else %}
     <a class="disabled">{{ day.day }}</a>
     {% endif %}
@@ -59,7 +65,8 @@
 {% for month in months %}
     <li>
     {% if month.has_data %}
-    <a href="{{ url_for('view_month', year=year, month=month.month) }}">{{ month.month }}</a>
+    <a {% if month.current %}class="current"{% endif %}
+            href="{{ url_for('view_month', year=year, month=month.month) }}">{{ month.month }}</a>
     {% else %}
     <a class="disabled">{{ month.month }}</a>
     {% endif %}
@@ -69,9 +76,9 @@
 {% endif %}
 <ul class="tag-list">
     <li><a href="{{ url_for('photo_list') }}">All</a></li>
-{% for year in years %}
+{% for syear in years %}
     <li>
-    <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
+    <a {% if syear == year %}class="current"{% endif %} href="{{ url_for('view_year', year=syear) }}">{{ syear }}</a>
     </li>
 {% endfor %}
 </ul>

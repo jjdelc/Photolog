@@ -103,6 +103,9 @@ font-size: 0.8rem;
 .tag-list .disabled {
 background: #cccccc;
 }
+.tag-list .current {
+background: green;
+}
 .main-picture-detail {
 max-width: 100%;
 margin: 0;
