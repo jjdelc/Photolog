@@ -133,7 +133,6 @@ def photo_list():
 
 
 def get_pic_nav(taken_time):
-    return {}
     prev_key, next_key = db.pictures.nav(taken_time)
     return {
         'prev': url_for('picture_detail', key=prev_key),
