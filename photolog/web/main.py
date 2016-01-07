@@ -236,16 +236,16 @@ def view_tags(tag_list):
 
 def months_tags(months):
     return [{
-        'month': m,
+        'month': '%02d' % m,
         'has_data': m in months
-    } for m in ['%02d' % m for m in range(1, 13)]]
+    } for m in range(1, 13)]
 
 
 def days_tags(days):
     return [{
-        'day': d,
+        'day': '%02d' % d,
         'has_data': d in days
-    } for d in ['%02d' % d for d in range(1, 32)]]
+    } for d in range(1, 32)]
 
 
 @app.route('/date/<int:year>/')
@@ -272,8 +272,6 @@ def view_year(year):
 @app.route('/date/<int:year>/<int:month>/')
 def view_month(year, month):
     page = int(request.args.get('page', '1'))
-    month = '%02d' % month
-    year = str(year)
     params = {
         'year': year,
         'month': month
@@ -292,7 +290,7 @@ def view_month(year, month):
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'month': month,
+        'month': '%02d' % month,
         'months': months_tags(present_months),
         'days': days_tags(active_days),
         'years': years
@@ -303,9 +301,6 @@ def view_month(year, month):
 @app.route('/date/<int:year>/<int:month>/<int:day>/')
 def view_day(year, month, day):
     page = int(request.args.get('page', '1'))
-    month = '%02d' % month
-    day = '%02d' % day
-    year = str(year)
     params = {
         'year': year,
         'month': month,
@@ -325,11 +320,11 @@ def view_day(year, month, day):
         'paginator': paginator,
         'total': tagged_total,
         'year': year,
-        'month': month,
+        'month': '%02d' % month,
         'months': months_tags(present_months),
         'days': days_tags(active_days),
         'years': years,
-        'day': day
+        'day': '%02d' % day
     }
     return render_template('photo_list.html', **ctx)
 

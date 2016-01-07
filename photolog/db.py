@@ -181,7 +181,7 @@ class DB(BaseDB):
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
     _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?'
-    _get_recent = 'SELECT * FROM pictures ORDER BY upload_time DESC LIMIT ? OFFSET ?'
+    _get_recent = 'SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?'
     _get_picture = 'SELECT * FROM pictures WHERE key = ?'
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
     _find_picture = 'SELECT * FROM pictures WHERE %s'

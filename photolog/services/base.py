@@ -116,8 +116,8 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
         'key': key,
         'year': exif['year'],
         'month': exif['month'],
-        'checksum': checksum,
         'day': exif['day'],
+        'checksum': checksum,
         'date_taken': exif['timestamp'],
         'upload_date': str(upload_date),
         'upload_time': int(time() * 100),
@@ -154,12 +154,15 @@ def read_exif(filename, upload_date, is_image):
         timestamp = str(exif['EXIF DateTimeOriginal'])
         # fmt='2015:12:04 00:50:53'
         year, month, day = timestamp.split(' ')[0].split(':')
+        year, month, day = int(year), int(month), int(day)
+
+    dims = None, None
     if is_image:
         dims = Image.open(filename).size
-    else:
-        dims = None, None
+
     brand = str(exif.get('Image Make', 'Unknown camera'))
     model = str(exif.get('Image Model', ''))
+
     return {
         'year': year,
         'month': month,
