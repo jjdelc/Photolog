@@ -2,8 +2,8 @@
 {% block header %}
 {% if year %}
     &raquo; <a href="{{ url_for('view_year', year=year) }}">{{ year }}</a>
-    {% if month %} - {{ month }}{% endif %}
-    {% if day %} - {{ day }}{% endif %}
+    {% if month %}/ <a href="{{ url_for('view_month', year=year, month=month) }}">{{ month }}</a>{% endif %}
+    {% if day %}/ <a href="{{ url_for('view_day', year=year, month=month, day=day) }}">{{ day }}</a>{% endif %}
 {% endif %}
 {% if selected_tags %}
     &raquo; {{ ' - '.join(selected_tags) }}
