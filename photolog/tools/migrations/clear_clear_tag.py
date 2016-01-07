@@ -4,7 +4,7 @@ from photolog.db import DB
 DB_FILE = os.environ['DB_FILE']
 
 SCRIPT = """
-DELETE FROM tagged_pics WHERE tag_id IN SELECT id FROM tags WHERE name = '';
+DELETE FROM tagged_pics WHERE tag_id IN (SELECT id FROM tags WHERE name = '');
 DELETE FROM tags WHERE name = '';
 """
 
