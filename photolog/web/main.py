@@ -132,16 +132,26 @@ def photo_list():
     return render_template('photo_list.html', **ctx)
 
 
+def get_pic_nav(taken_time):
+    prev_key, next_key = db.pictures.nav(taken_time)
+    return {
+        'prev': url_for('picture_detail', key=prev_key),
+        'next': url_for('picture_detail', key=next_key)
+    }
+
+
 @app.route('/photo/<string:key>/')
 def picture_detail(key):
     picture = db.pictures.by_key(key)
     tags = db.tags.for_picture(picture['id'])
+    nav = get_pic_nav(picture['taken_time'])
     return render_template('detail.html', **{
         'picture': picture,
         'tags': tags,
         'human_size': human_size(picture['size']),
         'flickr': get_flickr_data(picture),
-        'gphotos': get_gphotos_data(picture)
+        'gphotos': get_gphotos_data(picture),
+        'nav': nav
     })
 
 

@@ -124,6 +124,10 @@ class PictureManager:
                      'DESC'
     _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
     _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
+    _prev_pic = "SELECT key FROM pictures WHERE taken_time < ? ORDER BY " \
+                "taken_time DESC LIMIT 1"
+    _next_pic = "SELECT key FROM pictures WHERE taken_time > ? ORDER BY " \
+                "taken_time ASC LIMIT 1"
 
     def __init__(self, db):
         self.db = db
@@ -182,6 +186,12 @@ class PictureManager:
     def update(self, key, attr, value):
         with self.db._get_conn() as conn:
             return conn.execute(self._update_picture % attr, [value, key])
+
+    def nav(self, picture_time):
+        with self.db._get_conn() as conn:
+            prev_key = conn.execute(self._prev_pic, [picture_time]).fetchone()['key']
+            next_key = conn.execute(self._next_pic, [picture_time]).fetchone()['key']
+        return prev_key, next_key
 
 
 class DB(BaseDB):

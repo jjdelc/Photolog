@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <figure class="main-picture-detail">
+<a class="nav-link prev" href="{{ nav.prev }}"><i class="fa fa-chevron-left"></i></a>
 <img src="{{ picture.web }}"/>
+<a class="nav-link next" href="{{ nav.next }}"><i class="fa fa-chevron-right"></i></a>
 <figcaption>
     <p>
     <span title="MD5: {{ picture.checksum }}">{{ picture.name }}</span>

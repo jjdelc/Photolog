@@ -107,6 +107,7 @@ max-width: 100%;
 margin: 0;
 border: 2px solid #333333;
 background: radial-gradient(circle, #333333, #000000);
+position: relative;
 }
 .main-picture-detail img {
 display: block;
@@ -115,6 +116,28 @@ max-width: 100%;
 height: auto;
 max-height: 700px;
 width: auto;
+}
+.main-picture-detail .nav-link {
+color: white;
+position: absolute;
+top: 0;
+height: 90%;
+display: flex;
+align-items: center;
+text-decoration: none;
+width: 10%;
+min-width: 100px;
+padding: 1rem;
+}
+.main-picture-detail .nav-link:hover {
+color: blue;
+}
+.main-picture-detail .nav-link.next {
+right: 0;
+justify-content: flex-end;
+}
+.main-picture-detail .nav-link.prev {
+left: 0;
 }
 .main-picture-detail figcaption {
 font-size: 0.9rem;
