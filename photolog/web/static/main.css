@@ -39,6 +39,7 @@ padding: 5px;
 display: flex;
 align-items: center;
 min-width: 100px;
+height: 100px;
 }
 .photo-thumb-list a {
 display: block;
