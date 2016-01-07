@@ -37,8 +37,8 @@ class TestDB(TestDbBase):
             'key': key,
             'original': 'original.jpg'
         }, [])
-        db.update_picture(key, attr, value)
-        pic = db.get_picture(key)
+        db.pictures.update(key, attr, value)
+        pic = db.pictures.by_key(key)
         self.assertEqual(pic[attr], value)
 
     def test_find_picture(self):
@@ -64,17 +64,17 @@ class TestDB(TestDbBase):
             'month': 12,
             'day': 25
         }, ['phone', 'travel'])
-        found = db.find_picture({
+        found = db.pictures.find_one({
             'name': 'name',
             'year': 2015
         })
         self.assertEqual(found['original'], 'original.jpg')
-        found = db.find_picture({
+        found = db.pictures.find_one({
             'name': 'name',
             'year': 2012
         })
         self.assertEqual(found['original'], 'other original.jpg')
-        found = db.find_picture({
+        found = db.pictures.find_one({
             'name': 'name',
             'year': 2020  # Doesn't exist
         })

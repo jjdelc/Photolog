@@ -115,6 +115,15 @@ class PictureManager:
     _by_keys = 'SELECT * FROM pictures WHERE key IN (%s)'
     _change_date = 'UPDATE pictures SET year=?, month=?, day=?, taken_time=?,' \
                    ' date_taken=? WHERE key =?'
+    _get_recent = 'SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?'
+    _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? ' \
+                    'OFFSET ?'
+    _get_picture = 'SELECT * FROM pictures WHERE key = ?'
+    _find_picture = 'SELECT * FROM pictures WHERE %s'
+    _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
+                     'DESC'
+    _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
+    _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
 
     def __init__(self, db):
         self.db = db
@@ -132,6 +141,47 @@ class PictureManager:
                                              date_struct['taken_time'],
                                              date_struct['date_taken'],
                                              picture_key])
+
+    def recent(self, limit, offset):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._get_recent, (limit, offset))
+
+    def by_key(self, key):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._get_picture, [key]).fetchone()
+
+    def get_all(self, limit, offset):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._get_pictures, (limit, offset))
+
+    def find_one(self, params):
+        with self.db._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
+            return conn.execute(query, values).fetchone()
+
+    def find(self, params, limit=None, offset=None):
+        with self.db._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._find_pictures % ' AND '.join('%s = ?' % f for f in fields)
+            params = []
+            if limit:
+                query += ' LIMIT ?'
+                params.append(limit)
+            if offset:
+                query += ' OFFSET ?'
+                params.append(offset)
+            return conn.execute(query, list(values) + params)
+
+    def count(self, params):
+        with self.db._get_conn() as conn:
+            fields, values = zip(*params.items())
+            query = self._count_pictures % ' AND '.join('%s = ?' % f for f in fields)
+            return conn.execute(query, values).fetchone()['count']
+
+    def update(self, key, attr, value):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._update_picture % attr, [value, key])
 
 
 class DB(BaseDB):
@@ -180,14 +230,6 @@ class DB(BaseDB):
             ');'
             )
     _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
-    _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?'
-    _get_recent = 'SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?'
-    _get_picture = 'SELECT * FROM pictures WHERE key = ?'
-    _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
-    _find_picture = 'SELECT * FROM pictures WHERE %s'
-    _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
-                     'DESC'
-    _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
     _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
     _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
     _get_months = 'SELECT DISTINCT month from pictures WHERE year = ? ORDER BY year DESC'
@@ -215,50 +257,9 @@ class DB(BaseDB):
             picture_id = cur.lastrowid
             self.tags.tag_picture(picture_id, tags)
 
-    def get_pictures(self, limit, offset):
-        with self._get_conn() as conn:
-            return conn.execute(self._get_pictures, (limit, offset))
-
-    def get_recent(self, limit, offset):
-        with self._get_conn() as conn:
-            return conn.execute(self._get_recent, (limit, offset))
-
-    def get_picture(self, key):
-        with self._get_conn() as conn:
-            return conn.execute(self._get_picture, [key]).fetchone()
-
-    def find_picture(self, params):
-        with self._get_conn() as conn:
-            fields, values = zip(*params.items())
-            query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
-            return conn.execute(query, values).fetchone()
-
-    def find_pictures(self, params, limit=None, offset=None):
-        with self._get_conn() as conn:
-            fields, values = zip(*params.items())
-            query = self._find_pictures % ' AND '.join('%s = ?' % f for f in fields)
-            params = []
-            if limit:
-                query += ' LIMIT ?'
-                params.append(limit)
-            if offset:
-                query += ' OFFSET ?'
-                params.append(offset)
-            return conn.execute(query, list(values) + params)
-
-    def count_pictures(self, params):
-        with self._get_conn() as conn:
-            fields, values = zip(*params.items())
-            query = self._count_pictures % ' AND '.join('%s = ?' % f for f in fields)
-            return conn.execute(query, values).fetchone()['count']
-
     def total_pictures(self):
         with self._get_conn() as conn:
             return conn.execute(self._total_pictures).fetchone()['count']
-
-    def update_picture(self, key, attr, value):
-        with self._get_conn() as conn:
-            return conn.execute(self._update_picture % attr, [value, key])
 
     def tagged(self, name):
         return self.tags.pictures_for_tag(name)

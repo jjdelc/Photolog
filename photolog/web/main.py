@@ -56,7 +56,7 @@ def pictures_for_page(db, page_num, tags=None, year=None):
     elif year:
         db_pics = list(db.get_pictures_for_year(year, limit, offset))
     else:
-        db_pics = list(db.get_pictures(limit, offset))
+        db_pics = list(db.pictures.get_all(limit, offset))
     return db_pics
 
 
@@ -104,7 +104,7 @@ def index():
     db_total = db.total_pictures()
     all_tags = db.tags.all()
     years = db.get_years()
-    recent = list(db.get_recent(24, 0))
+    recent = list(db.pictures.recent(24, 0))
     ctx = {
         'recent': recent,
         'total': db_total,
@@ -134,7 +134,7 @@ def photo_list():
 
 @app.route('/photo/<string:key>/')
 def picture_detail(key):
-    picture = db.get_picture(key)
+    picture = db.pictures.by_key(key)
     tags = db.tags.for_picture(picture['id'])
     return render_template('detail.html', **{
         'picture': picture,
@@ -147,7 +147,7 @@ def picture_detail(key):
 
 @app.route('/photo/<string:key>/edit/tags/', methods=['GET', 'POST'])
 def tag_picture(key):
-    picture = db.get_picture(key)
+    picture = db.pictures.by_key(key)
     if request.method == 'GET':
         tags = db.tags.for_picture(picture['id'])
         return render_template('edit_tags.html', **{
@@ -164,7 +164,7 @@ def tag_picture(key):
 
 @app.route('/photo/<string:key>/blob/')
 def picture_detail_blob(key):
-    picture = db.get_picture(key)
+    picture = db.pictures.by_key(key)
     return render_template('detail_blob.html', **{
         'blob': json.dumps(picture, indent=2),
     })
@@ -277,8 +277,8 @@ def view_month(year, month):
         'month': month
     }
     offset, limit = (page - 1) * PAGE_SIZE, PAGE_SIZE
-    pictures = db.find_pictures(params, limit, offset)
-    tagged_total = db.count_pictures(params)
+    pictures = db.pictures.find(params, limit, offset)
+    tagged_total = db.pictures.count(params)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
@@ -307,8 +307,8 @@ def view_day(year, month, day):
         'day': day
     }
     offset, limit = (page - 1) * PAGE_SIZE, PAGE_SIZE
-    pictures = db.find_pictures(params, limit, offset)
-    tagged_total = db.count_pictures(params)
+    pictures = db.pictures.find(params, limit, offset)
+    tagged_total = db.pictures.count(params)
     paginator = get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
@@ -339,7 +339,7 @@ def tag_day(year, month, day):
         'month': month,
         'day': day
     }
-    total = db.count_pictures(params)
+    total = db.pictures.count(params)
     if request.method == 'GET':
         return render_template('edit_day_tags.html', **{
             'total': total,

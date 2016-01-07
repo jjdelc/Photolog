@@ -17,7 +17,7 @@ def migrate(db, settings):
                     'month': int(picture['month']),
                     'day': int(picture['day']),
                 })
-                db.update_picture(picture['key'], 'taken_time', taken_time)
+                db.pictures.update(picture['key'], 'taken_time', taken_time)
             except:
                 pass
 

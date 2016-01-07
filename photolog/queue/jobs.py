@@ -120,7 +120,7 @@ class ImageJob(BaseUploadJob):
         key = self.key
         flickr_url, photo_id = flickr.upload(self.settings, self.filename,
             self.full_filepath, tags)
-        self.db.update_picture(key, 'flickr', json.dumps({
+        self.db.pictures.update(key, 'flickr', json.dumps({
             'url': flickr_url,
             'id': photo_id
         }))
@@ -135,7 +135,7 @@ class ImageJob(BaseUploadJob):
                 section='feed')
         gphotos_data = gphotos.upload(self.settings, self.full_filepath,
             self.filename, album_url)
-        self.db.update_picture(self.key, 'gphotos', json.dumps({
+        self.db.pictures.update(self.key, 'gphotos', json.dumps({
             'xml': gphotos_data
         }))
         log.info("Uploaded %s to Gphotos" % self.key)
@@ -179,7 +179,7 @@ class RawFileJob(BaseUploadJob):
         ]]
         exif = self.data['data']['exif']
         for pos in possibilities:
-            result = self.db.find_picture({
+            result = self.db.pictures.find_one({
                 'name': pos,
                 'year': exif['year'],
                 'month': exif['month'],
@@ -239,7 +239,7 @@ class TagDayJob(BaseJob):
     """
     def process(self):
         data = self.data
-        pictures = list(self.db.find_pictures({
+        pictures = list(self.db.pictures.find({
             'year': data['year'],
             'month': data['month'],
             'day': data['day']
