@@ -45,7 +45,7 @@ def read_rotation(img_data):
     except ZeroDivisionError:
         # Error reading Exif :(
         return 0
-    img_orient_exif = exif[ORIENTATION_EXIF]
+    img_orient_exif = exif.get(ORIENTATION_EXIF, 0)
     if img_orient_exif == 3:
         return 180
     elif img_orient_exif == 6:
