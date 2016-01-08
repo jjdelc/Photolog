@@ -189,9 +189,9 @@ class PictureManager:
 
     def nav(self, picture_time):
         with self.db._get_conn() as conn:
-            prev_key = conn.execute(self._prev_pic, [picture_time]).fetchone()['key']
-            next_key = conn.execute(self._next_pic, [picture_time]).fetchone()['key']
-        return prev_key, next_key
+            prev_key = conn.execute(self._prev_pic, [picture_time]).fetchone()
+            next_key = conn.execute(self._next_pic, [picture_time]).fetchone()
+        return prev_key.get('key'), next_key.get('key')
 
 
 class DB(BaseDB):
