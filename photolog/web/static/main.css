@@ -111,7 +111,10 @@ max-width: 100%;
 margin: 0;
 border: 2px solid #333333;
 background: radial-gradient(circle, #333333, #000000);
+}
+.main-picture-detail .image {
 position: relative;
+display: block;
 }
 .main-picture-detail img {
 display: block;
@@ -125,13 +128,13 @@ width: auto;
 color: white;
 position: absolute;
 top: 0;
-height: 90%;
+height: 100%;
 display: flex;
 align-items: center;
 text-decoration: none;
 width: 10%;
 min-width: 100px;
-padding: 1rem;
+padding: 0 1rem;
 }
 .main-picture-detail .nav-link:hover {
 color: blue;
@@ -157,6 +160,9 @@ width: 50%;
 .main-picture-detail .picture-meta {
 font-size: 0.7rem;
 color: #cccccc;
+}
+.main-picture-detail time a:hover {
+text-decoration: underline;
 }
 .main-picture-detail time a {
 color: white;

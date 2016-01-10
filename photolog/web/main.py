@@ -151,7 +151,9 @@ def picture_detail(key):
         'human_size': human_size(picture['size']),
         'flickr': get_flickr_data(picture),
         'gphotos': get_gphotos_data(picture),
-        'nav': nav
+        'nav': nav,
+        'month': '%02d' % picture['month'],
+        'day': '%02d' % picture['day'],
     })
 
 
