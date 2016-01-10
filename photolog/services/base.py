@@ -10,12 +10,13 @@ from hashlib import md5
 from functools import partial
 from datetime import datetime
 from time import time, mktime
-from PIL import Image, ExifTags
+from PIL import Image, ExifTags, ImageFile
 from urllib.parse import urlparse, urljoin
 from os.path import splitext, basename, join
 
 from .gphotos import create_album, delete_album, clear_album
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 THUMBNAILS = {
     'thumb': 100,
