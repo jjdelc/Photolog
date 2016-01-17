@@ -183,7 +183,7 @@ def picture_detail_blob(key):
 
 
 def get_key(url):
-    return url.split('/')[-2]
+    return url.strip().split('/')[-2]
 
 
 @app.route('/edit/tags/', methods=['GET', 'POST'])
@@ -191,7 +191,7 @@ def mass_tag():
     if request.method == 'GET':
         return render_template('mass_tag.html')
     else:
-        keys = [get_key(k.strip()) for k in request.form['keys'].split()]
+        keys = [get_key(k) for k in request.form['keys'].split()]
         tags = request.form['tags']
         new_tags = {base.slugify(t) for t in tags.split(',') if t.strip()}
         if new_tags and keys:
@@ -212,7 +212,7 @@ def edit_dates():
     else:
         changes = []
         for field_n in range(1, 9):
-            key = request.form.get('key_%s' % field_n)
+            key = get_key(request.form.get('key_%s' % field_n))
             date = request.form.get('date_%s' % field_n)
             if key and date:
                 changes.append((key.strip(), datetime.strptime(date, '%Y-%m-%d')))

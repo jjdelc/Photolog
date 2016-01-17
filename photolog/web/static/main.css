@@ -61,10 +61,10 @@ margin: 0 auto;
 list-style-type: none;
 padding: 0;
 display: flex;
-font-size: 0.8rem;
+font-size: 0.75rem;
 margin: 0 0.5rem;
 border-left: 1px solid #cccccc;
-line-height: 200%;
+line-height: 220%;
 max-width: 98%;
 width: 24rem;
 flex-wrap: wrap;
@@ -78,12 +78,13 @@ background: white;
 display: block;
 text-decoration: none;
 text-align: center;
-min-width: 2rem;
+min-width: 1.8rem;
 color: #005199;
 }
 .paginator li a.current {
 font-weight: bold;
 color: black;
+font-size: 0.8rem;
 }
 .paginator .page-count {
 width: 5rem;
@@ -95,6 +96,7 @@ background: transparent;
 color: #AAA;
 text-align: right;
 font-style: italic;
+font-size: 0.7rem;
 }
 .tag-list {
 list-style-type: none;

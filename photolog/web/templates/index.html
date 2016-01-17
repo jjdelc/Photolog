@@ -18,7 +18,7 @@
 {% endfor %}
 </ul>
 <h2>Recent uploads</h2>
-<p><a href="{{ url_for('photo_list') }}">Browse all ({{ total }})</a></p>
+<p class="nav-total-images"><a href="{{ url_for('photo_list') }}">Browse all <strong>({{ total }})</strong></a></p>
 </section>
 <ol class="photo-thumb-list">
 {% for pic in recent %}
