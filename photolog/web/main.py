@@ -212,10 +212,13 @@ def edit_dates():
     else:
         changes = []
         for field_n in range(1, 9):
-            key = get_key(request.form.get('key_%s' % field_n))
-            date = request.form.get('date_%s' % field_n)
+            url = request.form.get('key_%s' % field_n).strip()
+            if not url:
+                continue
+            key = get_key(url)
+            date = request.form.get('date_%s' % field_n).strip()
             if key and date:
-                changes.append((key.strip(), datetime.strptime(date, '%Y-%m-%d')))
+                changes.append((key, datetime.strptime(date, '%Y-%m-%d')))
         if changes:
             queue.append({
                 'type': 'edit-dates',
