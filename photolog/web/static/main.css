@@ -48,6 +48,22 @@ margin: 3px;
 background: #333333;
 border: 1px solid rgba(0, 0, 0, 0.5);
 }
+.photo-thumb-list .format-raw {
+position: relative;
+}
+.photo-thumb-list .format-raw:after {
+content: 'raw ';
+display: block;
+pointer-events: none;
+font-size: 1.6rem;
+color: rgba(255, 255, 255, 0.5);
+position: absolute;
+bottom: 0;
+right: 0;
+width: 100%;
+text-align: right;
+background: rgba(0, 0, 0, 0.2);
+}
 .photo-thumb-list a {
 display: block;
 width: 100%;
