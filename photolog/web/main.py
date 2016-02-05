@@ -219,6 +219,14 @@ def edit_dates():
             date = request.form.get('date_%s' % field_n).strip()
             if key and date:
                 changes.append((key, datetime.strptime(date, '%Y-%m-%d')))
+
+        multikey = request.form.get('multikeys')
+        if multikey:
+            keys = [get_key(k) for k in multikey.split()]
+            dest_date = datetime.strptime(request.form.get('multikeys_dates'),
+                '%Y-%m-%d')
+            for key in keys:
+                changes.append((key, dest_date))
         if changes:
             queue.append({
                 'type': 'edit-dates',
