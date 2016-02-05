@@ -277,14 +277,37 @@ class EditDatesJob(BaseJob):
         log.info("Changing dates for %s pictures" % len(pictures))
         for key, date in changes:
             self.db.pictures.change_date(key, {
-                'year': '%04d' % date.year,
-                'month': '%02d' % date.month,
-                'day': '%02d' % date.day,
+                'year': date.year,
+                'month': date.month,
+                'day': date.day,
                 'taken_time': mktime(date.timetuple()),
                 'date_taken': date.strftime('%Y-%m-%d')
             })
         log.info("Done")
 
+
+class ChangeDateJob(BaseJob):
+    """
+    Changes the date of all pictures in one day
+    """
+    def process(self):
+        origin = self.data['origin']
+        target = self.data['target']
+        params = {
+            'year': origin.year,
+            'month': origin.month,
+            'day': origin.day
+        }
+        pictures = list(self.db.pictures.find(params))
+        for pic in pictures:
+            self.db.pictures.change_date(pic['key'], {
+                'year': target.year,
+                'month': target.month,
+                'day': target.day,
+                'taken_time': mktime(target.timetuple()),
+                'date_taken': target.strftime('%Y-%m-%d')
+            })
+        log.info("Done")
 
 upload_formats = [
     (ImageJob, IMAGE_FILES),
@@ -294,7 +317,8 @@ upload_formats = [
 job_types = {
     'tag-day': TagDayJob,
     'mass-tag': MassTagJob,
-    'edit-dates': EditDatesJob
+    'edit-dates': EditDatesJob,
+    'change-date': ChangeDateJob,
 }
 
 

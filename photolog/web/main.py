@@ -229,6 +229,24 @@ def edit_dates():
         return redirect('/edit/dates/')
 
 
+@app.route('/tags/dates/change/', methods=['POST'])
+def change_date():
+    if request.method == 'POST':
+        origin = request.form.get('origin').strip()
+        target = request.form.get('target').strip()
+        origin = datetime.strptime(origin, '%Y-%m-%d')
+        target = datetime.strptime(target, '%Y-%m-%d')
+        queue.append({
+            'type': 'change-date',
+            'key': uuid.uuid4().hex,
+            'origin': origin,
+            'target': target,
+            'attempt': 0
+        })
+        return redirect(url_for('view_day', year=target.year,
+            month=target.month, day=target.day))
+
+
 @app.route('/tags/<string:tag_list>/')
 def view_tags(tag_list):
     page = int(request.args.get('page', '1'))

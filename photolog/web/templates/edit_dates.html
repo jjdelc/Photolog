@@ -16,5 +16,23 @@
         <input type="submit" value="Change">
     </p>
 </form>
+
+<h2>Change day</h2>
+<form method="post" action="{{ url_for('change_date') }}">
+    <table>
+        <tr>
+            <td><label for="id_origin">Original</label></td>
+            <td><input type="date" name="origin" id="id_origin" placeholder="YYYY-MM-DD"/></td>
+        </tr>
+        <tr>
+            <td><label for="id_target">Original</label></td>
+            <td><input type="date" name="target" id="id_target" placeholder="YYYY-MM-DD"/></td>
+        </tr>
+    </table>
+    <p>
+        <input type="submit" value="Change">
+    </p>
+</form>
+
 </section>
 {% endblock %}
