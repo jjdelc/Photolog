@@ -185,7 +185,8 @@ def edit_attr(key):
     else:
         attr = request.form['attr']
         value = request.form['value']
-        if attr in picture:
+        confirm = request.form.get('confirm')
+        if confirm and attr in picture:
             db.pictures.edit_attribute(key, attr, value)
             return redirect(url_for('picture_detail_blob', key=key))
 
