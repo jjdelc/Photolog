@@ -22,7 +22,7 @@
 </section>
 <ol class="photo-thumb-list">
 {% for pic in recent %}
-    <li>
+    <li class="format-{{ pic.format }}">
     <a href="{{ url_for('picture_detail', key=pic.key) }}">
         <img src="{{ pic.thumb }}"/>
     </a>
