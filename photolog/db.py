@@ -115,6 +115,7 @@ class PictureManager:
     _by_keys = 'SELECT * FROM pictures WHERE key IN (%s)'
     _change_date = 'UPDATE pictures SET year=?, month=?, day=?, taken_time=?,' \
                    ' date_taken=? WHERE key =?'
+    _change_attr = 'UPDATE pictures SET %s=? WHERE key=?'
     _get_recent = 'SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?'
     _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? ' \
                     'OFFSET ?'
@@ -145,6 +146,10 @@ class PictureManager:
                                              date_struct['taken_time'],
                                              date_struct['date_taken'],
                                              picture_key])
+
+    def edit_attribute(self, picture_key, attr, value):
+        with self.db._get_conn() as conn:
+            return conn.execute(self._change_attr % attr, (value, picture_key))
 
     def recent(self, limit, offset):
         with self.db._get_conn() as conn:

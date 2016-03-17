@@ -174,10 +174,27 @@ def tag_picture(key):
         return redirect(url_for('picture_detail', key=key))
 
 
+@app.route('/photo/<string:key>/edit/attr/', methods=['GET', 'POST'])
+def edit_attr(key):
+    picture = db.pictures.by_key(key)
+    if request.method == 'GET':
+        return render_template('edit_attr.html', **{
+            'picture': picture,
+            'blob': json.dumps(picture, indent=2),
+        })
+    else:
+        attr = request.form['attr']
+        value = request.form['value']
+        if attr in picture:
+            db.pictures.edit_attribute(key, attr, value)
+            return redirect(url_for('picture_detail_blob', key=key))
+
+
 @app.route('/photo/<string:key>/blob/')
 def picture_detail_blob(key):
     picture = db.pictures.by_key(key)
     return render_template('detail_blob.html', **{
+        'picture': picture,
         'blob': json.dumps(picture, indent=2),
     })
 
@@ -426,9 +443,7 @@ def view_queue():
     result = queue.peek(200)
     size = len(queue)
     return render_template('jobs.html',
-        jobs=result,
-        size=size
-    )
+        jobs=result, size=size)
 
 
 @app.route('/jobs/bad/', methods=['POST'])

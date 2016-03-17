@@ -12,11 +12,18 @@
     </time>
 </figcaption>
 </figure>
+
 <section class="extra-info">
 <pre>
 {{ blob }}
 </pre>
-
-<p><a class="edit-tags" href="{{ url_for('edit_attr', key=picture.key) }}">Edit</a></p>
+<form method="post">
+    <p><label for="id_attr">Change attr</label>
+        <input autofocus type="text" id="id_attr" name="attr"/>
+        <input type="text" name="value"/>
+        <input type="submit" value="Change">
+    </p>
+</form>
 </section>
+
 {% endblock %}
