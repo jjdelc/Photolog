@@ -9,7 +9,7 @@ from photolog import queue_logger as log
 
 """
 To obtain a bearer token you must:
-Go to gogole developer console and create a new project
+Go to google developer console and create a new project
 Grant "New Credentials" for an "Oauth client ID"
 *important*
     The redirect_uri has to be "urn:ietf:wg:oauth:2.0:oob"
@@ -99,7 +99,8 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         'refresh_token': refresh_token,
         'client_id': client_id,
         'client_secret': secret,
-        'grant_type': 'refresh_token'
+        'grant_type': 'refresh_token',
+        #'access_type': 'offline'
     }).json()
     tokens.update_token(
         SERVICE,
