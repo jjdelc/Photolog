@@ -324,6 +324,7 @@ class TokensDB(BaseDB):
 
     def save_token(self, service, token, token_type, refresh_token, expires):
         with self._get_conn() as conn:
+            # TODO: Check if token exists for service and update instead of insert
             conn.execute(self._save_token, [service, token, token_type,
                                             refresh_token, expires])
 
