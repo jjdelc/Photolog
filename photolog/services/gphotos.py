@@ -17,9 +17,10 @@ Grant "New Credentials" for an "Oauth client ID"
 
 Construct the following URL and paste into browser:
 https://accounts.google.com/o/oauth2/v2/auth?
-    scope=https%3A%2F%2Fpicasaweb.google.com%2Fdata%2F
+    scope=https%3A%2F%2Fpicasaweb.google.com%2Fdata%2F&
     redirect_uri=urn:ietf:wg:oauth:2.0:oob&
     response_type=code&
+    access_type=offline&
     client_id={{YOUR_CLIENT_ID}}
 
 Copy the provided code as the GPHOTOS_ACCESS_CODE setting.
@@ -102,13 +103,13 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         'grant_type': 'refresh_token',
         #'access_type': 'offline'
     }).json()
-    tokens.update_token(
-        SERVICE,
-        response['access_token'],
-        response['token_type'],
-        time() + response['expires_in']
-    )
     if 'access_token' in response:
+        tokens.update_token(
+            SERVICE,
+            response['access_token'],
+            response['token_type'],
+            time() + response['expires_in']
+        )
         return response['access_token']
     else:
         # Some error
