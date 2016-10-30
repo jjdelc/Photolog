@@ -78,7 +78,7 @@ def exchange_token(tokens, client_id, secret, code):
         'client_secret': secret,
         'grant_type': 'authorization_code',
         'redirect_uri': OOB_URL,
-        'expires_in': 0
+        'expires_in': '0'
     }).json()
     if 'access_token' in response:
         tokens.save_token(
@@ -119,7 +119,7 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
 
 def do_upload(album_endpoint, filename, name, access_token, token_type):
     headers = {
-        'GData-Version': 2,
+        'GData-Version': '2',
         'Slug': name,
         'Content-Type': 'image/jpeg',
         'Authorization': '%s %s' % (token_type, access_token),
@@ -187,10 +187,10 @@ def create_album(album_name, settings):
     access_token, token_type = get_token(settings)
     payload = album_meta % album_name
     headers = {
-        'GData-Version': 2,
+        'GData-Version': '2',
         'Authorization': '%s %s' % (token_type, access_token),
         'MIME-version': '1.0',
-        'Content-length': len(payload.encode('ascii')),
+        'Content-length': str(len(payload.encode('ascii'))),
         'Content-Type': 'application/atom+xml; charset=UTF-8'
     }
     session = requests.Session()
@@ -210,7 +210,7 @@ def create_album(album_name, settings):
 def delete_album(album_url, settings):
     access_token, token_type = get_token(settings)
     headers = {
-        'GData-Version': 2,
+        'GData-Version': '2',
         'Authorization': '%s %s' % (token_type, access_token),
         'MIME-version': '1.0',
         'If-Match': '*'
@@ -226,7 +226,7 @@ def clear_album(album_url, settings):
     """
     access_token, token_type = get_token(settings)
     response = requests.get(album_url, headers={
-        'GData-Version': 2,
+        'GData-Version': '2',
         'Authorization': '%s %s' % (token_type, access_token),
         'MIME-version': '1.0',
     })
@@ -240,10 +240,10 @@ def clear_album(album_url, settings):
             group.remove(group[0])
     empty_album = etree.tostring(xml)
     response = requests.put(album_url, data=empty_album, headers={
-        'GData-Version': 2,
+        'GData-Version': '2',
         'Authorization': '%s %s' % (token_type, access_token),
         'MIME-version': '1.0',
-        'Content-length': len(empty_album),
+        'Content-length': str(len(empty_album)),
         'Content-Type': 'application/atom+xml; charset=UTF-8',
         'If-Match': '*'
     })
