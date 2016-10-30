@@ -123,7 +123,7 @@ def do_upload(album_endpoint, filename, name, access_token, token_type):
         'Slug': name,
         'Content-Type': 'image/jpeg',
         'Authorization': '%s %s' % (token_type, access_token),
-        'Content-Length': os.stat(filename).st_size,
+        'Content-Length': str(os.stat(filename).st_size),
         'MIME-version': '1.0'
     }
     session = requests.Session()
