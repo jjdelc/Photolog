@@ -129,7 +129,11 @@ def do_upload(album_endpoint, filename, name, access_token, token_type):
     session = requests.Session()
     request = requests.Request('POST', album_endpoint,
         data=open(filename, 'rb'), headers=headers)
-    response = session.send(request.prepare())
+    try:
+        response = session.send(request.prepare())
+    except Exception as err:
+        log.exception(err)
+        raise
     if response.status_code > 300:
         log.error('Failed to upload: %s' % response.text)
         raise ValueError(response.text)
