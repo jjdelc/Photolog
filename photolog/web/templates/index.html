@@ -29,4 +29,18 @@
     </li>
 {% endfor %}
 </ol>
+
+<ol class="paginator">
+    <li><a><i class="fa fa-chevron-left"></i> </a></li>
+    <li><a href="/photo/?page=1" class="current">1</a></li>
+    <li><a href="/photo/?page=2" class="">2</a></li>
+    <li><a href="/photo/?page=3" class="">3</a></li>
+    <li><a href="/photo/?page=4" class="">4</a></li>
+    <li><a href="/photo/?page=5" class="">5</a></li>
+    <li><a href="/photo/?page=2"><i class="fa fa-chevron-right"></i> </a></li>
+    <li><a href="/photo/?page={{ total_pages }}"><i class="fa fa-chevron-circle-right"></i></a></li>
+    <li><form>
+        <input type="number"  class="page-count" name="page" placeholder="{{ total_pages }} pages"/>
+    </form></li>
+</ol>
 {% endblock %}

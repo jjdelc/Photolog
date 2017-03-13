@@ -109,7 +109,8 @@ def index():
         'recent': recent,
         'total': db_total,
         'all_tags': all_tags,
-        'years': years
+        'years': years,
+        'total_pages': math.ceil(db_total / PAGE_SIZE)
     }
     return render_template('index.html', **ctx)
 
