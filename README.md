@@ -1,6 +1,7 @@
-#Photolog
+# Photolog
 
-This is my personal solution for photo management.
+This is my personal solution for photo management. It consists on the following
+pieces:
 
 * Simple API server that receives picture uploads
 * Simple processing queue that uploads pictures to S3, Flickr and GPhotos
@@ -44,9 +45,9 @@ a Yaml file containing the needed settings:
 The Yaml file should have the following keys:
 
 ```
-UPLOAD_FOLDER: <directory for tmp uploads>
-DB_FILE: <Sqlite db file>
-API_SECRET: <arbitraty string of your choice>
+UPLOAD_FOLDER: <local filesystem directory for uploads temp files>
+DB_FILE: <Sqlite db file, absolute path>
+API_SECRET: <arbitraty string of your choice, shared with client>
 
 S3_ACCESS_KEY: <AWS Access>
 S3_SECRET_KEY: <AWS Secret>
@@ -61,7 +62,9 @@ GPHOTOS_SECRET: <API SECRET>
 GPHOTOS_CLIENT_ID: <CLIENT ID>
 GPHOTOS_ACCESS_CODE: <PRISTINE ACCESS CODE>
 
-
+DOMAIN: <Domain where photolog is hosted>
+AUTH_ME: <Indieauth site for login>
+SECRET_KEY: <Sessions secret key>
 ```
 
 ### Flickr
@@ -130,7 +133,7 @@ The best way to have it ready is to create a file under `~/.photolog` with the
 following:
 
 ```
-host: <http://upload.host.com>
+host: <https://upload.host.com>
 halt: <boolean>
 secret: <same secret from API settings>
 ```
@@ -167,3 +170,11 @@ uploaded to Gphotos again ("gphotos" or "flickr"):
 
 They will be added to the queue and processed sequentially. Will be available
 from your web interface.
+
+# Authentication
+
+Photolog is single user and uses [Indieauth](https://indieauth.com/) for 
+authentication. The site for authentication is configured under the `AUTH_ME`
+setting, this site has to be [Indieauth compatible](https://indieauth.com/setup).
+
+Hit the `/login/` url for signing in. Hit `/logout/` for logging out.

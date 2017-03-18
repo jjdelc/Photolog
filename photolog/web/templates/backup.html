@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="extra-info">
+<form method="post" action=".">
+    <h1>Download backup file</h1>
+    <input type="submit" value="Download backup file ({{ db_size }})">
+</form>
+</section>
+{% endblock %}
