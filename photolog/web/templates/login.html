@@ -16,18 +16,16 @@
     </h1>
 </header>
 <div class="main-content">
-{% block content %}{% endblock %}
+<section class="extra-info">
+<h1>Log in</h1>
+<form action="{{ auth_url }}" method="get">
+    <input type="hidden" name="client_id" value="{{ client_id }}">
+    <input type="url" name="me" value="">
+    <input type="hidden" name="redirect_uri" value="{{ redirect_url }}">
+    <input type="submit" value="Log in">
+</form>
+</section>
+
 </div>
-<footer class="main-footer">
-    <p>
-        <a href="/jobs/">Queue</a> -
-        <a href="/jobs/bad/">Bad jobs</a> -
-        <a href="/edit/tags/">Edit tags</a> -
-        <a href="/edit/dates/">Edit dates</a> -
-        <a href="/search/">Search</a>
-        <a href="/backup/">Backup</a>
-        <a href="/logout/">Log out</a>
-    </p>
-</footer>
 </body>
 </html>
