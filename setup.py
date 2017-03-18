@@ -11,6 +11,7 @@ setup(
         'PyYAML==3.11',
         'Pillow==3.0.0',
         'ExifRead==2.1.2',
+        'Flask-Login==0.4.0'
     ],
     entry_points={
         'console_scripts': [
