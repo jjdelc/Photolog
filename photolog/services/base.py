@@ -101,7 +101,7 @@ def taken_timestamp(time_string, exif):
             dt = datetime.strptime(time_string, TIME_FORMAT)
         else:
             raise ValueError
-    except ValueError:
+    except (ValueError, TypeError):
         # Could not get a date... then what? Use base day
         dt = datetime(exif['year'], exif['month'], exif['day'])
     return mktime(dt.timetuple())
@@ -152,16 +152,14 @@ def store_video(db, key, name, s3_urls, tags, upload_date, exif, format,
         'date_taken': exif['timestamp'],
         'upload_date': str(upload_date),
         'upload_time': int(time() * 100),
-        'camera': exif['camera'],
         'width': exif['width'],
         'height': exif['height'],
         'size': exif['size'],
-        'original': s3_urls['original'],
+        'original': s3_urls['video'],
         'thumb': s3_urls.get('thumb', ''),
-        'medium': s3_urls.get('medium', ''),
         'web': s3_urls.get('web', ''),
         'format': format,
-        'large': s3_urls.get('large', ''),
+        'large': s3_urls.get('original', ''),
         'taken_time': taken_time,
     }
     db.add_picture(values, tags)

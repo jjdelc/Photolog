@@ -148,7 +148,7 @@ def add_photo():
     filename = _add_photo(settings, queue, uploaded_file,
                           uploaded_file.filename, tags, skip, batch_id, is_last)
     log.info('Queued file: %s' % filename)
-    return '', 201
+    return '', 202
 
 
 def start():

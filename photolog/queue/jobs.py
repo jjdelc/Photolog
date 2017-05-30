@@ -186,21 +186,30 @@ class VideoJob(BaseUploadJob):
         except FileExistsError:
             # Dir already created
             pass
-        subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        subprocess.call(cmd, stderr=subprocess.PIPE)
         result = os.listdir(output_dir)
         if result:
+            result = sorted(result)
             center_frame = result[int(len(result)/2)]  # Roughly center frame
-            return os.path.join(output_dir, center_frame)
-        placeholder = os.path.join(output_dir, 'bare-thumb.png')
-        with open(placeholder, 'w') as fh:
-            fh.write(VIDEO_PLACEHOLDER)
-        return placeholder
+            thumbnail = os.path.join(output_dir, center_frame)
+        else:
+            placeholder = os.path.join(output_dir, 'bare-thumb.png')
+            with open(placeholder, 'wb') as fh:
+                fh.write(VIDEO_PLACEHOLDER)
+                thumbnail = placeholder
+        thumbs = base.generate_thumbnails(thumbnail,
+            self.settings.THUMBS_FOLDER)
+        self.data['data']['thumbs'] = thumbs
 
-    def _s3_video_upload(self, thumbnail):
-        pass
-
-    def _upload_thumb(self, thumbnail):
-        pass
+    def _s3_video_upload(self):
+        job = self.data
+        exif = job['data']['exif']
+        path = '%s/%s' % (exif['year'], exif['month'])
+        thumbs = self.data['data']['thumbs']
+        uploaded_thumbs = s3.upload_thumbs(self.settings, thumbs, path)
+        video = s3.upload_video(self.settings, self.full_filepath, path)
+        uploaded_thumbs['video'] = video
+        job['data']['s3_urls'] = uploaded_thumbs
 
     def _local_store(self):
         job = self.data
@@ -208,7 +217,7 @@ class VideoJob(BaseUploadJob):
         s3_urls = job['data']['s3_urls']
         tags = job['tags']
         checksum = self._get_checksum()
-        exif = {}  # Read metadata from video file if available?
+        exif = job['data']['exif']
         base.store_video(
             self.db,
             self.key,
@@ -216,9 +225,26 @@ class VideoJob(BaseUploadJob):
             s3_urls, tags, upload_date, exif, self.format,
             checksum, notes=self._get_notes())
 
+    def _read_exif(self):
+        upload_date = self.data.get('target_date', self.data['uploaded_at'])
+        thumbnail = self.data['data']['thumbs']['original']
+        exif = base.read_exif(thumbnail, upload_date, is_image=True)
+        # Should be obtained from the video somehow
+        year, month, day = upload_date.year, upload_date.month, upload_date.day
+        self.data['data']['exif'] = {
+            'year': year,
+            'month': month,
+            'day': day,
+            'width': exif['width'],
+            'height': exif['height'],
+            'size': os.stat(self.full_filepath).st_size,
+            'timestamp': upload_date
+        }
+
     def finish_job(self):
         base.delete_file(self.full_filepath, {})
-        shutil.rmtree(os.path.basename(self.thumbnail))
+        thumbnail = self.data['data']['thumbnail']
+        shutil.rmtree(os.path.basename(thumbnail))
         return None  # This ends the processing
 
     def local_process(self):
@@ -228,15 +254,14 @@ class VideoJob(BaseUploadJob):
         base_file = self.original_filename
         key = self.key
         log.info('Processing %s - Obtaining thumbnail (%s)' % (key, base_file))
-        thumbnail_file = self._generate_thumbnail()
+        self._generate_thumbnail()
+        log.info('Processing %s - Read metadata (%s)' % (key, base_file))
+        self._read_exif()
         log.info('Processing %s - Upload file (%s)' % (key, base_file))
-        self._s3_video_upload(thumbnail_file)
-        log.info('Processing %s - Upload thumbnail (%s)' % (key, base_file))
-        self._upload_thumb(thumbnail_file)
+        self._s3_video_upload()
         log.info('Processing %s - local_store (%s)' % (key, base_file))
         self._local_store()
         log.info('Processing %s - Stored (%s)' % (key, base_file))
-        self.thumbnail = thumbnail_file  # So delete process can delete it
 
 
 class RawFileJob(BaseUploadJob):
