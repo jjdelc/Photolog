@@ -55,6 +55,7 @@ def upload_video(settings, video_full_filename, path):
 
     if len(mp.get_all_parts()) == chunks_count:
         mp.complete_upload()
+        video_key.set_acl('public-read')
         log.info("upload_video done")
     else:
         mp.cancel_upload()
