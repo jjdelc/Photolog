@@ -1,8 +1,10 @@
 import os
 import json
+import shutil
+import subprocess
 from time import mktime
-from photolog.services import s3, gphotos, flickr, base
-from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES
+from photolog.services import s3, gphotos, flickr, base, VIDEO_PLACEHOLDER
+from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES, VIDEO_FILES
 
 
 def job_fname(job, settings):
@@ -159,6 +161,84 @@ class ImageJob(BaseUploadJob):
         return self.data
 
 
+class VideoJob(BaseUploadJob):
+    format = 'video'
+    steps = {
+        'upload_and_store': ('local_process', 'gphotos'),
+        'gphotos': ('gphotos_upload', 'finish'),
+        'finish': ('finish_job', None)
+    }
+
+    def _generate_thumbnail(self):
+        dirname = os.path.dirname(self.full_filepath)
+        output_dir = os.path.join(dirname, self.key)
+
+        cmd = [
+            'ffmpeg',
+            '-i',
+            self.full_filepath,
+            '-r',
+            '1/1',
+            '%s/%%03d.jpg' % output_dir
+        ]
+        try:
+            os.mkdir(output_dir)
+        except FileExistsError:
+            # Dir already created
+            pass
+        subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        result = os.listdir(output_dir)
+        if result:
+            center_frame = result[int(len(result)/2)]  # Roughly center frame
+            return os.path.join(output_dir, center_frame)
+        placeholder = os.path.join(output_dir, 'bare-thumb.png')
+        with open(placeholder, 'w') as fh:
+            fh.write(VIDEO_PLACEHOLDER)
+        return placeholder
+
+    def _s3_video_upload(self, thumbnail):
+        pass
+
+    def _upload_thumb(self, thumbnail):
+        pass
+
+    def _local_store(self):
+        job = self.data
+        upload_date = job['uploaded_at']
+        s3_urls = job['data']['s3_urls']
+        tags = job['tags']
+        checksum = self._get_checksum()
+        exif = {}  # Read metadata from video file if available?
+        base.store_video(
+            self.db,
+            self.key,
+            self.original_filename,
+            s3_urls, tags, upload_date, exif, self.format,
+            checksum, notes=self._get_notes())
+
+    def finish_job(self):
+        base.delete_file(self.full_filepath, {})
+        shutil.rmtree(os.path.basename(self.thumbnail))
+        return None  # This ends the processing
+
+    def local_process(self):
+        """
+        Generate thumbnails and upload raw video to S3
+        """
+        base_file = self.original_filename
+        key = self.key
+        log.info('Processing %s - Obtaining thumbnail (%s)' % (key, base_file))
+        thumbnail_file = self._generate_thumbnail()
+        log.info('Processing %s - Upload file (%s)' % (key, base_file))
+        self._s3_video_upload(thumbnail_file)
+        log.info('Processing %s - Upload thumbnail (%s)' % (key, base_file))
+        self._upload_thumb(thumbnail_file)
+        log.info('Processing %s - local_store (%s)' % (key, base_file))
+        self._local_store()
+        log.info('Processing %s - Stored (%s)' % (key, base_file))
+        self.thumbnail = thumbnail_file  # So delete process can delete it
+
+
 class RawFileJob(BaseUploadJob):
     steps = {  # Step function, Next job
         'upload_and_store': ('local_process', 'finish'),
@@ -311,7 +391,8 @@ class ChangeDateJob(BaseJob):
 
 upload_formats = [
     (ImageJob, IMAGE_FILES),
-    (RawFileJob, RAW_FILES)
+    (RawFileJob, RAW_FILES),
+    (VideoJob, VIDEO_FILES)
 ]
 
 job_types = {

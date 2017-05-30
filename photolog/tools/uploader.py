@@ -6,7 +6,7 @@ from time import time
 from hashlib import md5
 from urllib.parse import urljoin
 from photolog.services.base import file_checksum
-from photolog import cli_logger as log, ALLOWED_FILES, IMAGE_FILES, RAW_FILES
+from photolog import cli_logger as log, ALLOWED_FILES, IMAGE_FILES, RAW_FILES, VIDEO_FILES
 
 BATCH_SIZE = 1999  # Max Gphotos album is 2000
 UPLOAD_ATTEMPTS = 3
@@ -104,7 +104,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
 
 def upload_directories(targets, filelist, host, secret, tags, skip, halt):
     start = time()
-    first_batch, second_batch = [], []
+    first_batch, second_batch, third_batch = [], [], []
     for target in targets:
         if os.path.isdir(target):
             for file in os.listdir(target):
@@ -117,6 +117,8 @@ def upload_directories(targets, filelist, host, secret, tags, skip, halt):
                     first_batch.append((file, full_file))
                 elif ext in RAW_FILES:
                     second_batch.append((file, full_file))
+                elif ext in VIDEO_FILES:
+                    third_batch.append((file, full_file))
         else:
             name, ext = os.path.splitext(target)
             ext = ext.lstrip('.').lower()
@@ -127,6 +129,8 @@ def upload_directories(targets, filelist, host, secret, tags, skip, halt):
                 first_batch.append((target, full_file))
             elif ext in RAW_FILES:
                 second_batch.append((target, full_file))
+            elif ext in VIDEO_FILES:
+                third_batch.append((target, full_file))
 
     for target in filelist:
         name, ext = os.path.splitext(target)
@@ -138,11 +142,13 @@ def upload_directories(targets, filelist, host, secret, tags, skip, halt):
             first_batch.append((target, full_file))
         elif ext in RAW_FILES:
             second_batch.append((target, full_file))
+        elif ext in VIDEO_FILES:
+            third_batch.append((target, full_file))
 
     n, skipped = 1, 0
-    total_files = len(first_batch) + len(second_batch)
+    total_files = len(first_batch) + len(second_batch) + len(third_batch)
     log.info('Found %s files' % total_files)
-    for batch in chunks(sorted(first_batch) + sorted(second_batch), BATCH_SIZE):
+    for batch in chunks(sorted(first_batch) + sorted(second_batch) + sorted(third_batch), BATCH_SIZE):
         #batch_id = start_batch(endpoint, secret)
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))

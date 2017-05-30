@@ -137,6 +137,36 @@ def store_photo(db, key, name, s3_urls, tags, upload_date, exif, format,
     db.add_picture(values, tags)
 
 
+def store_video(db, key, name, s3_urls, tags, upload_date, exif, format,
+        checksum, notes=''):
+    taken_time = taken_timestamp(exif['timestamp'], exif)
+    values = {
+        'name': name,
+        'filename': name,
+        'notes': notes,
+        'key': key,
+        'year': exif['year'],
+        'month': exif['month'],
+        'day': exif['day'],
+        'checksum': checksum,
+        'date_taken': exif['timestamp'],
+        'upload_date': str(upload_date),
+        'upload_time': int(time() * 100),
+        'camera': exif['camera'],
+        'width': exif['width'],
+        'height': exif['height'],
+        'size': exif['size'],
+        'original': s3_urls['original'],
+        'thumb': s3_urls.get('thumb', ''),
+        'medium': s3_urls.get('medium', ''),
+        'web': s3_urls.get('web', ''),
+        'format': format,
+        'large': s3_urls.get('large', ''),
+        'taken_time': taken_time,
+    }
+    db.add_picture(values, tags)
+
+
 def delete_file(filename, thumbs):
     all_files = [filename] + list(thumbs.values())
     for thumb_file in all_files:
