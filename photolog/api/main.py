@@ -51,7 +51,7 @@ def filename_for_file(uploaded_file, filename, path):
 
 
 def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip,
-        batch_id, is_last):
+        batch_id, is_last, target_date):
     filename = filename_for_file(uploaded_file, base_filename,
                                  _settings.UPLOAD_FOLDER)
 
@@ -63,6 +63,7 @@ def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip,
         'tags': tags,
         'original_filename': uploaded_file.filename,
         'uploaded_at': datetime.now(),
+        'target_date': target_date,
         'step': 'upload_and_store',  # First thing to do to the pics,
         'data': {},  # Store additional parameters,
         'attempt': 0,  # Records how many times this step has been attempted
@@ -145,8 +146,9 @@ def add_photo():
     skip = request.form.get('skip', '')
     skip = {slugify(t) for t in skip.split(',')}
     tags = [t for t in tags if t]  # Strip empty
+    target_date = request.form.get('target_date')
     filename = _add_photo(settings, queue, uploaded_file,
-                          uploaded_file.filename, tags, skip, batch_id, is_last)
+        uploaded_file.filename, tags, skip, batch_id, is_last, target_date)
     log.info('Queued file: %s' % filename)
     return '', 202
 

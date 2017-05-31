@@ -54,7 +54,7 @@ def validate_file(filename):
         raise OSError('Invalid file')
 
 
-def handle_file(host, full_file, secret, tags, skip, halt):
+def handle_file(host, full_file, secret, tags, skip, halt, target_date):
     """
     :param host: Host to upload data to
     :param full_file: Full file path in local machine
@@ -77,12 +77,15 @@ def handle_file(host, full_file, secret, tags, skip, halt):
                     log.info('File %s already uploaded' % full_file)
                     return False
                 else:
-                    response = requests.post(endpoint, data={
+                    post_data = {
                         'tags': tags,
                         'skip': skip,
                         # 'batch_id': None,
                         # 'is_last': False,  # n == total_files
-                    }, files={
+                    }
+                    if target_date:
+                        post_data['target_date'] = target_date
+                    response = requests.post(endpoint, data=post_data, files={
                         'photo_file': open(full_file, 'rb'),
                     }, headers={
                         'X-PHOTOLOG-SECRET': secret
@@ -102,7 +105,7 @@ def handle_file(host, full_file, secret, tags, skip, halt):
     raise requests.ConnectionError('Could not connect to %s' % host)
 
 
-def upload_directories(targets, filelist, host, secret, tags, skip, halt):
+def upload_directories(targets, filelist, host, secret, tags, skip, halt, target_date):
     start = time()
     first_batch, second_batch, third_batch = [], [], []
     for target in targets:
@@ -153,7 +156,7 @@ def upload_directories(targets, filelist, host, secret, tags, skip, halt):
         for file, full_file in batch:
             log.info('Uploading %s [%s/%s]' % (full_file, n, total_files))
             file_start = time()
-            uploaded = handle_file(host, full_file, secret, tags, skip, halt)
+            uploaded = handle_file(host, full_file, secret, tags, skip, halt, target_date)
             skipped += 1 if not uploaded else 0
             pct = 100 * n / total_files
             log.info("Done in %0.2fs [%0.1f%%]" % (time() - file_start, pct))
@@ -186,6 +189,8 @@ def run():
         help="Host to upload")
     parser.add_argument('--skip', nargs='?', type=str,
         help="steps to skip")
+    parser.add_argument('--target_date', nargs='?', type=str,
+        help="Media date")
     parsed = parser.parse_args()
     directories = [os.path.realpath(d) for d in (parsed.directories or [])]
     halt = config.get('halt', False)
@@ -193,8 +198,9 @@ def run():
     secret = md5(config['secret'].encode('utf-8')).hexdigest()
     tags = parsed.tags or ''
     skip = parsed.skip or ''
+    target_date = parsed.target_date or None
     filelist = read_filelist(parsed.filelist)
-    upload_directories(directories, filelist, host, secret, tags, skip, halt)
+    upload_directories(directories, filelist, host, secret, tags, skip, halt, target_date)
 
 
 if __name__ == '__main__':

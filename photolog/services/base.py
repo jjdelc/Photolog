@@ -56,9 +56,10 @@ def read_rotation(img_data):
     return 0
 
 
-def generate_thumbnails(filename, thumbs_folder):
+def generate_thumbnails(filename, thumbs_folder, base_name=None):
     base = basename(filename)
     name, ext = splitext(base)
+    name = splitext(base_name)[0] if base_name else name
     secret = random_string()
     # Also add random to original
     new_original = join(thumbs_folder, '%s-%s%s' % (name, secret, ext))
@@ -93,6 +94,13 @@ def generate_thumbnails(filename, thumbs_folder):
 
 
 TIME_FORMAT = '%Y:%m:%d %H:%M:%S'
+DAY_FORMAT = '%Y-%m-%d'
+
+
+def ensure_datetime(time_str):
+    if isinstance(time_str, datetime):
+        return time_str
+    return datetime.strptime(time_str, DAY_FORMAT)
 
 
 def taken_timestamp(time_string, exif):
@@ -157,6 +165,7 @@ def store_video(db, key, name, s3_urls, tags, upload_date, exif, format,
         'size': exif['size'],
         'original': s3_urls['video'],
         'thumb': s3_urls.get('thumb', ''),
+        'medium': s3_urls.get('thumb', ''),
         'web': s3_urls.get('web', ''),
         'format': format,
         'large': s3_urls.get('original', ''),

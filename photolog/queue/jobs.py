@@ -198,7 +198,7 @@ class VideoJob(BaseUploadJob):
                 fh.write(VIDEO_PLACEHOLDER)
                 thumbnail = placeholder
         thumbs = base.generate_thumbnails(thumbnail,
-            self.settings.THUMBS_FOLDER)
+            self.settings.THUMBS_FOLDER, self.filename)
         self.data['data']['thumbs'] = thumbs
 
     def _s3_video_upload(self):
@@ -226,7 +226,8 @@ class VideoJob(BaseUploadJob):
             checksum, notes=self._get_notes())
 
     def _read_exif(self):
-        upload_date = self.data.get('target_date', self.data['uploaded_at'])
+        upload_date = self.data['target_date'] or self.data['uploaded_at']
+        upload_date = base.ensure_datetime(upload_date)
         thumbnail = self.data['data']['thumbs']['original']
         exif = base.read_exif(thumbnail, upload_date, is_image=True)
         # Should be obtained from the video somehow
