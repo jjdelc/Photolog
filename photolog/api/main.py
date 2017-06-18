@@ -50,18 +50,23 @@ def filename_for_file(uploaded_file, filename, path):
     return unique_filename(secure_filename(filename), _crc, path)
 
 
-def _add_photo(_settings, _queue, uploaded_file, base_filename, tags, skip,
+def queue_file(_settings, _queue, uploaded_file, metadata_file, tags, skip,
         batch_id, is_last, target_date):
-    filename = filename_for_file(uploaded_file, base_filename,
+    filename = filename_for_file(uploaded_file, uploaded_file.filename,
                                  _settings.UPLOAD_FOLDER)
-
     uploaded_file.save(os.path.join(_settings.UPLOAD_FOLDER, filename))
+
+    if metadata_file:
+        metadata_filename = filename_for_file(metadata_file, metadata_file.filename,
+            _settings.UPLOAD_FOLDER)
+        metadata_file.save(os.path.join(_settings.UPLOAD_FOLDER, metadata_filename))
     _queue.append({
         'type': 'upload',
         'key': uuid.uuid4().hex,
         'filename': filename,
         'tags': tags,
         'original_filename': uploaded_file.filename,
+        'metadata_filename': metadata_filename if metadata_file else None,
         'uploaded_at': datetime.now(),
         'target_date': target_date,
         'step': 'upload_and_store',  # First thing to do to the pics,
@@ -124,6 +129,7 @@ def verify_photo():
 @app.route('/photos/', methods=['POST'])
 def add_photo():
     uploaded_file = request.files.get('photo_file')
+    metadata_file = request.files.get('metadata_file', None)
     if not uploaded_file:
         return jsonify({
             'error': 'Must send an `photo_file`'
@@ -147,8 +153,8 @@ def add_photo():
     skip = {slugify(t) for t in skip.split(',')}
     tags = [t for t in tags if t]  # Strip empty
     target_date = request.form.get('target_date')
-    filename = _add_photo(settings, queue, uploaded_file,
-        uploaded_file.filename, tags, skip, batch_id, is_last, target_date)
+    filename = queue_file(settings, queue, uploaded_file, metadata_file,
+        tags, skip, batch_id, is_last, target_date)
     log.info('Queued file: %s' % filename)
     return '', 202
 

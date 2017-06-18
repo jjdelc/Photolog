@@ -117,7 +117,7 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
 
 
-def do_upload(album_endpoint, filename, name, access_token, token_type):
+def _upload_photo(album_endpoint, filename, name, access_token, token_type):
     headers = {
         'GData-Version': '2',
         'Slug': name,
@@ -126,9 +126,38 @@ def do_upload(album_endpoint, filename, name, access_token, token_type):
         'Content-Length': str(os.stat(filename).st_size),
         'MIME-version': '1.0'
     }
+    files = [('data', open(filename, 'rb'))]
+    return do_upload(album_endpoint, files, headers)
+
+
+def _upload_video(album_endpoint, filename, name, access_token, token_type, mime):
+    metadata = """<entry xmlns='http://www.w3.org/2005/Atom'>
+      <title>%(name)s</title>
+      <summary>%(name)s</summary>
+      <category scheme="http://schemas.google.com/g/2005#kind"
+        term="http://schemas.google.com/photos/2007#photo"/>
+    </entry>""" % {
+        'name': name
+    }
+    metadata = metadata.encode('utf-8')
+    headers = {
+        'GData-Version': '2',
+        'Slug': name,
+        'Content-Type': 'multipart/related',
+        'Authorization': '%s %s' % (token_type, access_token),
+        'Content-Length': str(os.stat(filename).st_size + len(metadata)),
+        'MIME-version': '1.0'
+    }
+    files = [
+        (None, (None, metadata, 'application/atom+xml')),
+        (None, (None, open(filename, 'rb'), mime))
+    ]
+    return do_upload(album_endpoint, files, headers)
+
+
+def do_upload(album_endpoint, files, headers):
     session = requests.Session()
-    request = requests.Request('POST', album_endpoint,
-        data=open(filename, 'rb'), headers=headers)
+    request = requests.Request('POST', album_endpoint, files=files, headers=headers)
     try:
         response = session.send(request.prepare())
     except Exception as err:
@@ -165,14 +194,20 @@ def get_token(settings):
     return access_token, token_type
 
 
-def upload(settings, filename, name, album):
-    """
-    Uploads the given file to Google Photos and returns its url
-    """
+def upload_photo(settings, filename, name, album):
+    """Uploads the given file to Google Photos and returns its url"""
     access_token, token_type = get_token(settings)
     # Uploads to "Drop Box" album unless other specified
     album = album or PICASA_ENDPOINT
-    return do_upload(album, filename, name, access_token, token_type)
+    return _upload_photo(album, filename, name, access_token, token_type)
+
+
+def upload_video(settings, filename, name, album, mime):
+    """Uploads the given file to Google Photos and returns its url"""
+    access_token, token_type = get_token(settings)
+    # Uploads to "Drop Box" album unless other specified
+    album = album or PICASA_ENDPOINT
+    return _upload_video(album, filename, name, access_token, token_type, mime)
 
 
 album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'

@@ -1,14 +1,12 @@
 import os
 import json
-import shutil
-import subprocess
 from time import mktime
-from photolog.services import s3, gphotos, flickr, base, VIDEO_PLACEHOLDER
+from photolog.services import s3, gphotos, flickr, base
 from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES, VIDEO_FILES
 
 
-def job_fname(job, settings):
-    return os.path.join(settings.UPLOAD_FOLDER, job['filename'])
+def job_fname(filename, settings):
+    return os.path.join(settings.UPLOAD_FOLDER, filename)
 
 
 class BaseJob(object):
@@ -33,8 +31,14 @@ class BaseUploadJob(BaseJob):
         self.filename = job_data['filename']
         # Original filename of the file uploaded on remove system
         self.original_filename = job_data['original_filename']
+        # Metadata file if any (for videos)
+        self.metadata_filename = self.data['metadata_filename']
         # Full file path of uploaded original file locally
-        self.full_filepath = job_fname(job_data, settings)
+        self.full_filepath = job_fname(job_data['filename'], settings)
+        if self.metadata_filename:
+            self.metadata_full_filepath = job_fname(job_data['metadata_filename'], settings)
+        else:
+            self.metadata_full_filepath = None
 
     def _read_exif(self):
         upload_date = self.data['uploaded_at']
@@ -135,7 +139,7 @@ class ImageJob(BaseUploadJob):
         if batch_id:
             album_url = base.batch_2_album(batch_id, self.settings,
                 section='feed')
-        gphotos_data = gphotos.upload(self.settings, self.full_filepath,
+        gphotos_data = gphotos.upload_photo(self.settings, self.full_filepath,
             self.filename, album_url)
         self.db.pictures.update(self.key, 'gphotos', json.dumps({
             'xml': gphotos_data
@@ -170,35 +174,9 @@ class VideoJob(BaseUploadJob):
     }
 
     def _generate_thumbnail(self):
-        dirname = os.path.dirname(self.full_filepath)
-        output_dir = os.path.join(dirname, self.key)
-
-        cmd = [
-            'ffmpeg',
-            '-i',
-            self.full_filepath,
-            '-r',
-            '1/1',
-            '%s/%%03d.jpg' % output_dir
-        ]
-        try:
-            os.mkdir(output_dir)
-        except FileExistsError:
-            # Dir already created
-            pass
-        subprocess.call(cmd, stderr=subprocess.PIPE)
-        result = os.listdir(output_dir)
-        if result:
-            result = sorted(result)
-            center_frame = result[int(len(result)/2)]  # Roughly center frame
-            thumbnail = os.path.join(output_dir, center_frame)
-        else:
-            placeholder = os.path.join(output_dir, 'bare-thumb.png')
-            with open(placeholder, 'wb') as fh:
-                fh.write(VIDEO_PLACEHOLDER)
-                thumbnail = placeholder
-        thumbs = base.generate_thumbnails(thumbnail,
-            self.settings.THUMBS_FOLDER, self.filename)
+        thumbs, output_dir = base.get_video_thumbnail(self.settings,
+            self.full_filepath, self.filename, self.key)
+        self.data['output_dir'] = output_dir
         self.data['data']['thumbs'] = thumbs
 
     def _s3_video_upload(self):
@@ -229,23 +207,34 @@ class VideoJob(BaseUploadJob):
         upload_date = self.data['target_date'] or self.data['uploaded_at']
         upload_date = base.ensure_datetime(upload_date)
         thumbnail = self.data['data']['thumbs']['original']
-        exif = base.read_exif(thumbnail, upload_date, is_image=True)
-        # Should be obtained from the video somehow
-        year, month, day = upload_date.year, upload_date.month, upload_date.day
-        self.data['data']['exif'] = {
-            'year': year,
-            'month': month,
-            'day': day,
-            'width': exif['width'],
-            'height': exif['height'],
-            'size': os.stat(self.full_filepath).st_size,
-            'timestamp': upload_date
-        }
+        exif = base.video_exif(self.settings, self.full_filepath, upload_date,
+            self.metadata_full_filepath, thumbnail)
+        self.data['data']['exif'] = exif
+
+    def gphotos_upload(self):
+        batch_id = self.data['batch_id']
+        album_url = None
+        if batch_id:
+            album_url = base.batch_2_album(batch_id, self.settings,
+                section='feed')
+        mime = self.data['data']['exif']['mime']
+        gphotos_data = gphotos.upload_video(self.settings, self.full_filepath,
+            self.filename, album_url, mime)
+        self.db.pictures.update(self.key, 'gphotos', json.dumps({
+            'xml': gphotos_data
+        }))
+        log.info("Uploaded %s to Gphotos" % self.key)
+        return self.data
 
     def finish_job(self):
-        base.delete_file(self.full_filepath, {})
-        thumbnail = self.data['data']['thumbnail']
-        shutil.rmtree(os.path.basename(thumbnail))
+        # Delete thumbnails from selected thumb
+        thumbs = self.data['data'].get('thumbs', {})
+        base.delete_file(self.full_filepath, thumbs)
+        # Delete metadata file if any
+        if self.metadata_filename:
+            base.delete_file(self.metadata_filename, {})
+        # Delete directory with video screen caps
+        base.delete_dir(self.data['output_dir'])
         return None  # This ends the processing
 
     def local_process(self):
@@ -263,6 +252,7 @@ class VideoJob(BaseUploadJob):
         log.info('Processing %s - local_store (%s)' % (key, base_file))
         self._local_store()
         log.info('Processing %s - Stored (%s)' % (key, base_file))
+        return self.data
 
 
 class RawFileJob(BaseUploadJob):
@@ -431,7 +421,7 @@ job_types = {
 
 def prepare_job(job, db, settings):
     if job.get('type', 'upload') == 'upload':
-        filename = job_fname(job, settings)
+        filename = job_fname(job['filename'], settings)
         name, ext = os.path.splitext(filename)
         ext = ext.lstrip('.').lower()
         for cls, types in upload_formats:

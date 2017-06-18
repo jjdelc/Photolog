@@ -48,11 +48,18 @@ margin: 3px;
 background: #333333;
 border: 1px solid rgba(0, 0, 0, 0.5);
 }
+.photo-thumb-list .format-video,
 .photo-thumb-list .format-raw {
 position: relative;
 }
+.photo-thumb-list .format-video:after {
+content: 'vid ';
+}
 .photo-thumb-list .format-raw:after {
 content: 'raw ';
+}
+.photo-thumb-list .format-video:after,
+.photo-thumb-list .format-raw:after {
 display: block;
 pointer-events: none;
 font-size: 1.6rem;

@@ -54,6 +54,28 @@ def validate_file(filename):
         raise OSError('Invalid file')
 
 
+def find_metadata_file(full_filename):
+    """
+    Looks for a .THM file on the same directory as the video file
+    :param filename:
+    :return:
+    """
+    filename = os.path.basename(full_filename)
+    name, ext = os.path.splitext(filename)
+    if ext.lstrip('.').lower() not in VIDEO_FILES:
+        return False
+
+    dirname = os.path.dirname(full_filename)
+    metadata_extensions = ['.THM', '_1.THM', '_2.THM']
+    dirlist = set(os.listdir(dirname))
+    for suffix in metadata_extensions:
+        target = '%s%s' % (name, suffix)
+        if target in dirlist:
+            log.info('Found metadata file %s for %s' % (target, filename))
+            return os.path.join(dirname, target)
+    assert False
+
+
 def handle_file(host, full_file, secret, tags, skip, halt, target_date):
     """
     :param host: Host to upload data to
@@ -83,11 +105,16 @@ def handle_file(host, full_file, secret, tags, skip, halt, target_date):
                         # 'batch_id': None,
                         # 'is_last': False,  # n == total_files
                     }
+                    files = {
+                        'photo_file': open(full_file, 'rb'),
+                    }
                     if target_date:
                         post_data['target_date'] = target_date
-                    response = requests.post(endpoint, data=post_data, files={
-                        'photo_file': open(full_file, 'rb'),
-                    }, headers={
+                    else:
+                        metadata_file = find_metadata_file(full_file)
+                        if metadata_file:
+                            files['metadata_file'] = open(metadata_file, 'rb')
+                    response = requests.post(endpoint, data=post_data, files=files, headers={
                         'X-PHOTOLOG-SECRET': secret
                     })
                     return response.status_code == 201

@@ -5,6 +5,7 @@ import string
 import piexif
 import shutil
 import exifread
+import subprocess
 import unicodedata
 from hashlib import md5
 from functools import partial
@@ -14,6 +15,7 @@ from PIL import Image, ExifTags, ImageFile
 from urllib.parse import urlparse, urljoin
 from os.path import splitext, basename, join
 
+from . import VIDEO_PLACEHOLDER
 from .gphotos import create_album, delete_album, clear_album
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -183,6 +185,11 @@ def delete_file(filename, thumbs):
             pass
 
 
+def delete_dir(filename):
+    dirname = os.path.dirname(filename)
+    shutil.rmtree(dirname)
+
+
 def read_exif(filename, upload_date, is_image):
     exif = exifread.process_file(open(filename, 'rb'))
     timestamp = None
@@ -194,9 +201,13 @@ def read_exif(filename, upload_date, is_image):
         year, month, day = timestamp.split(' ')[0].split(':')
         year, month, day = int(year), int(month), int(day)
 
-    dims = None, None
     if is_image:
         dims = Image.open(filename).size
+    else:
+        # Read from video metadata
+        w = exif.get('EXIF ExifImageWidth')
+        h = exif.get('EXIF ExifImageLength')
+        dims = w.values[0] if w else None, h.values[0] if h else None
 
     brand = str(exif.get('Image Make', 'Unknown camera'))
     model = str(exif.get('Image Model', ''))
@@ -265,3 +276,95 @@ def slugify(text):
     text = re.sub('[^\w\s-]', '', text).strip().lower()
     text = re.sub('[-\s]+', '-', text)
     return text
+
+
+FFMPEG_PATH = 'ffmpeg'
+
+
+def get_video_thumbnail(settings, full_filepath, filename, key):
+    dirname = os.path.dirname(full_filepath)
+    output_dir = os.path.join(dirname, key)
+
+    cmd = [
+        FFMPEG_PATH,
+        '-i',
+        full_filepath,
+        '-r',
+        '1/1',
+        '%s/%%03d.jpg' % output_dir
+    ]
+    try:
+        os.mkdir(output_dir)
+    except FileExistsError:
+        # Dir already created
+        pass
+    subprocess.call(cmd, stderr=subprocess.PIPE)
+    result = os.listdir(output_dir)
+    if result:
+        result = sorted(result)
+        center_frame = result[int(len(result) / 2)]  # Roughly center frame
+        thumbnail = os.path.join(output_dir, center_frame)
+    else:
+        placeholder = os.path.join(output_dir, 'bare-thumb.png')
+        with open(placeholder, 'wb') as fh:
+            fh.write(VIDEO_PLACEHOLDER)
+            thumbnail = placeholder
+    thumbs = generate_thumbnails(thumbnail,
+        settings.THUMBS_FOLDER, filename)
+    return thumbs, output_dir
+
+
+# https://developers.google.com/picasa-web/docs/2.0/developers_guide_protocol#PostVideo
+# In attempt order, this cannot be a dict.
+VIDEO_MIMES = [
+    ('mp4', 'mp4'),
+    ('avi', 'avi'),
+    ('mpg', 'mpeg'),
+    ('3gp', '3gpp'),
+    ('mov', 'quicktime'),
+]
+
+
+def video_encoding(full_filepath):
+    cmd = [
+        FFMPEG_PATH,
+        '-i',
+        full_filepath,
+    ]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output, err = proc.communicate()
+    lines = output.decode('utf-8').splitlines()
+    for l in lines:
+        if l.startswith('Input') and full_filepath in l:
+            # This is the line that indicates the formats
+            formats = set(l.split(',',1)[1].strip().split(' ')[0].strip(',').split(','))
+            for fmt, mime in VIDEO_MIMES:
+                if fmt in formats:
+                    return 'video/%s' % mime
+    # Failed to find the line we wanted from ffmpeg output
+    if full_filepath.lower().endswith(('mpg', 'mpeg')):
+        # Last attempt if its an mpeg file
+        return 'video/mpeg'
+    # Else, fallback avi
+    return 'video/avi'
+
+
+def video_exif(settings, full_filepath, upload_date, metadata_full_filepath, thumbnail):
+    video_enc = video_encoding(full_filepath)
+    if metadata_full_filepath:
+        exif = read_exif(metadata_full_filepath, upload_date, is_image=False)
+    else:
+        exif = read_exif(thumbnail, upload_date, is_image=True)
+        # Should be obtained from the video somehow
+        year, month, day = upload_date.year, upload_date.month, upload_date.day
+        exif = {
+            'year': year,
+            'month': month,
+            'day': day,
+            'width': exif['width'],
+            'height': exif['height'],
+            'size': os.stat(full_filepath).st_size,
+            'timestamp': upload_date
+        }
+    exif['mime'] = video_enc
+    return exif
