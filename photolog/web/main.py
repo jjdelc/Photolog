@@ -36,6 +36,7 @@ class User(UserMixin):
     def get_id(self):
         return settings.AUTH_ME
 
+
 # This is our single user
 user = User()
 
