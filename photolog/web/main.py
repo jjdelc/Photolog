@@ -575,6 +575,8 @@ def login():
             if me == user.get_id():
                 login_user(user)
                 return redirect(url_for('index'))
+            else:
+                abort(401)
         else:
             abort(401)
 
