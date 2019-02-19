@@ -122,6 +122,8 @@ class ImageJob(BaseUploadJob):
         self.data['data']['thumbs'] = thumbs
 
     def flickr_upload(self):
+        if not self.settings.FLICKR_ENABLED:
+            return self.data
         tags = self.data['tags']
         key = self.key
         flickr_url, photo_id = flickr.upload(self.settings, self.filename,
