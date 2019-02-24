@@ -136,6 +136,8 @@ class ImageJob(BaseUploadJob):
         return self.data
 
     def gphotos_upload(self):
+        if not self.settings.GPHOTOS_ENABLED:
+            return self.data
         batch_id = self.data['batch_id']
         album_url = None
         if batch_id:
