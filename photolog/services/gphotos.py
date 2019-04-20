@@ -181,7 +181,9 @@ def do_upload(files, headers, retry=True):
     if response.status_code == 429:
         # RESOURCE_EXHAUSTED
         if retry:
+            log.info("Sleeping for 60s")
             sleep(60)  # Wait a minute
+            log.info("Retrying")
             return do_upload(files, headers, retry=False)
     elif response.status_code > 300:
         log.error('Failed obtain upload token: %s' % response.text)
@@ -210,7 +212,9 @@ def do_upload(files, headers, retry=True):
     if item_response.status_code == 429:
         # RESOURCE_EXHAUSTED
         if retry:
+            log.info("Sleeping for 60s")
             sleep(60)  # Wait a minute
+            log.info("Retrying")
             return do_upload(files, headers, retry=False)
     elif item_response.status_code > 300:
         log.error('Failed to upload: %s' % item_response.text)
