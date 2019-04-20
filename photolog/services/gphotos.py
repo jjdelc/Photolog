@@ -1,5 +1,5 @@
 import os
-from time import time
+from time import time, sleep
 import xml.etree.ElementTree as etree
 from urllib.parse import urlencode, urlunparse
 
@@ -163,12 +163,13 @@ def _upload_video(filename, name, access_token, token_type, mime):
     return do_upload(files, headers)
 
 
-def do_upload(files, headers):
+def do_upload(files, headers, retry=True):
     """
     Follows the steps described in:
         https://developers.google.com/photos/library/guides/upload-media
     :param files: The bytes to upload
     :param headers: dict of headers to upload containing the Authorization
+    :param retry: Boolean to indicate if we should backoff/retry
     :return: media item ID
     """
     try:
@@ -176,10 +177,17 @@ def do_upload(files, headers):
     except Exception as err:
         log.exception(err)
         raise
-    if response.status_code > 300:
+
+    if response.status_code == 429:
+        # RESOURCE_EXHAUSTED
+        if retry:
+            sleep(60)  # Wait a minute
+            return do_upload(files, headers, retry=False)
+    elif response.status_code > 300:
         log.error('Failed obtain upload token: %s' % response.text)
         raise ValueError(response.text)
     upload_token = response.text
+
     new_items = {
         "newMediaItems": [
             {
@@ -198,7 +206,13 @@ def do_upload(files, headers):
     except Exception as err:
         log.exception(err)
         raise
-    if item_response.status_code > 300:
+
+    if item_response.status_code == 429:
+        # RESOURCE_EXHAUSTED
+        if retry:
+            sleep(60)  # Wait a minute
+            return do_upload(files, headers, retry=False)
+    elif item_response.status_code > 300:
         log.error('Failed to upload: %s' % item_response.text)
         raise ValueError(item_response.text)
 
