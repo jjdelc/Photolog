@@ -112,10 +112,9 @@ def get_gphotos_data(picture):
             pass
         else:
             xml_str = picture_data.get('xml')
-            json_str = picture_data.get('json')
-            if json_str:
+            json_data = picture_data.get('json')
+            if json_data:
                 # Gphotos API (2019)
-                json_data = json.loads(json_str)
                 photo_id = json_data['id']
                 url = json_data['productUrl']
             elif xml_str:
