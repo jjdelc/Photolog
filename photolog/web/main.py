@@ -102,16 +102,24 @@ def get_flickr_data(picture):
 
 
 def get_gphotos_data(picture):
-    xml_data = picture.get('gphotos')
+    picture_data = picture.get('gphotos')
     photo_id, url = '', ''
-    if xml_data:
+    if picture_data:
         try:
-            xml_str = json.loads(xml_data).get('xml')
+            picture_data = json.loads(picture_data)
         except ValueError:
             # Bad Json?
             pass
         else:
-            if xml_str:
+            xml_str = picture_data.get('xml')
+            json_str = picture_data.get('json')
+            if json_str:
+                # Gphotos API (2019)
+                json_data = json.loads(json_str)
+                photo_id = json_data['id']
+                url = json_data['productUrl']
+            elif xml_str:
+                # For old photos where it returned XML, Picasa API
                 xml = etree.parse(StringIO(xml_str))
                 root = xml.getroot()
                 links = root.findall('{http://www.w3.org/2005/Atom}link')

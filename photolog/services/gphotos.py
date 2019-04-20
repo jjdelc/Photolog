@@ -13,11 +13,11 @@ Go to google developer console and create a new project
 Grant "New Credentials" for an "Oauth client ID"
 *important*
     The redirect_uri has to be "urn:ietf:wg:oauth:2.0:oob"
-    scope has to point to https%3A%2F%2Fpicasaweb.google.com%2Fdata%2F
+    scope has to point to https://www.googleapis.com/auth/photoslibrary.appendonly
 
 Construct the following URL and paste into browser:
 https://accounts.google.com/o/oauth2/v2/auth?
-    scope=https%3A%2F%2Fpicasaweb.google.com%2Fdata%2F&
+    scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary&
     redirect_uri=urn:ietf:wg:oauth:2.0:oob&
     response_type=code&
     access_type=offline&
@@ -36,10 +36,18 @@ grant_type=authorization_code
 """
 
 SERVICE = 'gphotos'
-EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
+# https://developers.google.com/api-client-library/python/auth/installed-app
+# This value signals to the Google Authorization Server that the
+# authorization code should be returned in the title bar of the browser,
 OOB_URL = "urn:ietf:wg:oauth:2.0:oob"
+#EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
 CODE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
-PICASA_ENDPOINT = "https://picasaweb.google.com/data/feed/api/user/default"
+UPLOAD_ENDPOINT = "https://photoslibrary.googleapis.com/v1/uploads"
+ITEM_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate"
+
+AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/auth"
+#EXCHANGE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+EXCHANGE_TOKEN_ENDPOINT = "https://www.googleapis.com/oauth2/v4/token"
 
 # For Gphotos/Atom XML parsing
 etree.register_namespace('', 'http://www.w3.org/2005/Atom')
@@ -48,26 +56,27 @@ etree.register_namespace('media', 'http://search.yahoo.com/mrss/')
 etree.register_namespace('app', 'http://www.w3.org/2007/app')
 etree.register_namespace('gd', 'http://schemas.google.com/g/2005')
 
+# https://developers.google.com/photos/library/guides/authentication-authorization
+SCOPE = "https://www.googleapis.com/auth/photoslibrary"
+GACCOUNT_HOST = "accounts.google.com"
+GACCOUNT_PATH = "/o/oauth2/v2/auth"
+
 
 def get_access_code(client_id):
     """
     Use this function to discover the URL you need to visit to get your
      one off code to exchange for an access token.
+    https://developers.google.com/identity/protocols/OAuth2WebServer
     """
     params = {
-        'redirect_uri': "urn:ietf:wg:oauth:2.0:oob",
-        'scope': "https://picasaweb.google.com/data/",
-        'response_type': 'code',
+        'redirect_uri': OOB_URL,
+        'scope': SCOPE,
         'client_id': client_id,
-        'access_type': 'offline'
+        'response_type': 'code',
+        'access_type': 'offline',
     }
     return urlunparse([
-        'https',
-        'accounts.google.com',
-        '/o/oauth2/v2/auth',
-        '',
-        urlencode(params),
-        ''
+        'https', GACCOUNT_HOST, GACCOUNT_PATH, '', urlencode(params), ''
     ])
 
 
@@ -78,7 +87,7 @@ def exchange_token(tokens, client_id, secret, code):
         'client_secret': secret,
         'grant_type': 'authorization_code',
         'redirect_uri': OOB_URL,
-        'expires_in': '0'
+        'expires_in': '86400'  # 1 day in seconds
     }).json()
     if 'access_token' in response:
         tokens.save_token(
@@ -101,7 +110,7 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         'client_id': client_id,
         'client_secret': secret,
         'grant_type': 'refresh_token',
-        #'access_type': 'offline'
+        'access_type': 'offline'
     }).json()
     if 'access_token' in response:
         tokens.update_token(
@@ -117,20 +126,19 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
 
 
-def _upload_photo(album_endpoint, filename, name, access_token, token_type):
+def _upload_photo(filename, name, access_token, token_type):
     headers = {
-        'GData-Version': '2',
-        'Slug': name,
-        'Content-Type': 'image/jpeg',
         'Authorization': '%s %s' % (token_type, access_token),
-        'Content-Length': str(os.stat(filename).st_size),
-        'MIME-version': '1.0'
+        'Content-type': 'application/octet-stream',
+        # 'Content-Length': str(os.stat(filename).st_size),
+        'X-Goog-Upload-File-Name': name,
+        'X-Goog-Upload-Protocol': 'raw',
     }
-    files = [('data', open(filename, 'rb'))]
-    return do_upload(album_endpoint, files, headers)
+    files = open(filename, 'rb').read()
+    return do_upload(files, headers)
 
 
-def _upload_video(album_endpoint, filename, name, access_token, token_type, mime):
+def _upload_video(filename, name, access_token, token_type, mime):
     metadata = """<entry xmlns='http://www.w3.org/2005/Atom'>
       <title>%(name)s</title>
       <summary>%(name)s</summary>
@@ -152,21 +160,50 @@ def _upload_video(album_endpoint, filename, name, access_token, token_type, mime
         (None, (None, metadata, 'application/atom+xml')),
         (None, (None, open(filename, 'rb'), mime))
     ]
-    return do_upload(album_endpoint, files, headers)
+    return do_upload(files, headers)
 
 
-def do_upload(album_endpoint, files, headers):
-    session = requests.Session()
-    request = requests.Request('POST', album_endpoint, files=files, headers=headers)
+def do_upload(files, headers):
+    """
+    Follows the steps described in:
+        https://developers.google.com/photos/library/guides/upload-media
+    :param files: The bytes to upload
+    :param headers: dict of headers to upload containing the Authorization
+    :return: media item ID
+    """
     try:
-        response = session.send(request.prepare())
+        response = requests.post(UPLOAD_ENDPOINT, data=files, headers=headers)
     except Exception as err:
         log.exception(err)
         raise
     if response.status_code > 300:
-        log.error('Failed to upload: %s' % response.text)
+        log.error('Failed obtain upload token: %s' % response.text)
         raise ValueError(response.text)
-    return response.text
+    upload_token = response.text
+    new_items = {
+        "newMediaItems": [
+            {
+                "description": "",
+                "simpleMediaItem": {
+                    "uploadToken": upload_token
+                }
+            }
+        ]
+    }
+    try:
+        item_response = requests.post(ITEM_ENDPOINT, json=new_items, headers={
+            "Authorization": headers["Authorization"],
+            "Content-Type": "application/json"
+        })
+    except Exception as err:
+        log.exception(err)
+        raise
+    if item_response.status_code > 300:
+        log.error('Failed to upload: %s' % item_response.text)
+        raise ValueError(item_response.text)
+
+    new_items_resp = item_response.json()
+    return new_items_resp["newMediaItemResults"][0]["mediaItem"]
 
 
 def get_token(settings):
@@ -186,6 +223,7 @@ def get_token(settings):
             log.info("Token refreshed")
     else:
         log.info('Obtaining Gphotos token')
+        #access_token = gphotos.exchange_token(tokens,
         access_token = exchange_token(tokens,
             settings.GPHOTOS_CLIENT_ID,
             settings.GPHOTOS_SECRET,
@@ -194,20 +232,16 @@ def get_token(settings):
     return access_token, token_type
 
 
-def upload_photo(settings, filename, name, album):
+def upload_photo(settings, filename, name):
     """Uploads the given file to Google Photos and returns its url"""
     access_token, token_type = get_token(settings)
-    # Uploads to "Drop Box" album unless other specified
-    album = album or PICASA_ENDPOINT
-    return _upload_photo(album, filename, name, access_token, token_type)
+    return _upload_photo(filename, name, access_token, token_type)
 
 
-def upload_video(settings, filename, name, album, mime):
+def upload_video(settings, filename, name, mime):
     """Uploads the given file to Google Photos and returns its url"""
     access_token, token_type = get_token(settings)
-    # Uploads to "Drop Box" album unless other specified
-    album = album or PICASA_ENDPOINT
-    return _upload_video(album, filename, name, access_token, token_type, mime)
+    return _upload_video(filename, name, access_token, token_type, mime)
 
 
 album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'
@@ -233,7 +267,7 @@ def create_album(album_name, settings):
         'Content-Type': 'application/atom+xml; charset=UTF-8'
     }
     session = requests.Session()
-    request = requests.Request('POST', PICASA_ENDPOINT,
+    request = requests.Request('POST', UPLOAD_ENDPOINT,
         data=payload.encode('ascii'), headers=headers)
     response = session.send(request.prepare())
     if response.status_code == 201:

@@ -144,9 +144,9 @@ class ImageJob(BaseUploadJob):
             album_url = base.batch_2_album(batch_id, self.settings,
                 section='feed')
         gphotos_data = gphotos.upload_photo(self.settings, self.full_filepath,
-            self.filename, album_url)
+            self.filename)
         self.db.pictures.update(self.key, 'gphotos', json.dumps({
-            'xml': gphotos_data
+            'json': gphotos_data
         }))
         log.info("Uploaded %s to Gphotos" % self.key)
         return self.data
@@ -223,7 +223,7 @@ class VideoJob(BaseUploadJob):
                 section='feed')
         mime = self.data['data']['exif']['mime']
         gphotos_data = gphotos.upload_video(self.settings, self.full_filepath,
-            self.filename, album_url, mime)
+            self.filename, mime)
         self.db.pictures.update(self.key, 'gphotos', json.dumps({
             'xml': gphotos_data
         }))
