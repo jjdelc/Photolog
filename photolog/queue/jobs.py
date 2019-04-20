@@ -32,7 +32,7 @@ class BaseUploadJob(BaseJob):
         # Original filename of the file uploaded on remove system
         self.original_filename = job_data['original_filename']
         # Metadata file if any (for videos)
-        self.metadata_filename = self.data['metadata_filename']
+        self.metadata_filename = self.data.get('metadata_filename')
         # Full file path of uploaded original file locally
         self.full_filepath = job_fname(job_data['filename'], settings)
         if self.metadata_filename:
@@ -217,10 +217,6 @@ class VideoJob(BaseUploadJob):
 
     def gphotos_upload(self):
         batch_id = self.data['batch_id']
-        album_url = None
-        if batch_id:
-            album_url = base.batch_2_album(batch_id, self.settings,
-                section='feed')
         mime = self.data['data']['exif']['mime']
         gphotos_data = gphotos.upload_video(self.settings, self.full_filepath,
             self.filename, mime)
@@ -408,6 +404,7 @@ class ChangeDateJob(BaseJob):
                 'date_taken': target.strftime('%Y-%m-%d')
             })
         log.info("Done")
+
 
 upload_formats = [
     (ImageJob, IMAGE_FILES),
