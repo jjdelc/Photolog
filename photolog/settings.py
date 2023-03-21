@@ -12,7 +12,7 @@ class Settings(object):
 
     @classmethod
     def load(cls, settings_file):
-        settings = yaml.load(open(settings_file).read())
+        settings = yaml.safe_load(open(settings_file))
         return cls(**settings)
 
     def __init__(self, **kwargs):

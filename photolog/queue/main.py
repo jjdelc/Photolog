@@ -44,6 +44,10 @@ def daemon(db, settings, queue):
 
 
 def start():
+    if not settings_file:
+        print("Provide a SETTINGS env variable pointing to the settings.yaml file")
+        sys.exit(1)
+
     settings = Settings.load(settings_file)
     db = DB(settings.DB_FILE)
     queue = SqliteQueue(settings.DB_FILE)

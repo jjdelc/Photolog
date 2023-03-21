@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import binascii
 from hashlib import md5
@@ -13,6 +14,10 @@ from photolog.settings import Settings
 from photolog import api_logger as log, settings_file, ALLOWED_FILES
 from photolog.services.base import random_string, start_batch, end_batch, \
     slugify
+
+if not settings_file:
+    print("Provide a SETTINGS env variable pointing to the settings.yaml file")
+    sys.exit(1)
 
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)
@@ -79,53 +84,54 @@ def queue_file(_settings, _queue, uploaded_file, metadata_file, tags, skip,
     return filename
 
 
-def valid_secret():
+def invalid_secret():
     secret = request.headers.get('X-PHOTOLOG-SECRET', '')
     return secret != md5(settings.API_SECRET.encode('utf-8')).hexdigest()
 
 
+def require_secret(view_fun):
+    def __inner(*args, **kwargs):
+        if invalid_secret():
+            return jsonify({'error': 'Invalid request'}), 400
+        return view_fun(*args, **kwargs)
+
+    return __inner
+
+
+@require_secret
 @app.route('/photos/', methods=['GET'])
 def get_photo():
     return jsonify({
-        'last': queue.peek()
+        'last': list(queue.peek())
     }), 200
 
 
+@require_secret
 @app.route('/photos/batch/', methods=['POST'])
 def new_batch():
-    if valid_secret():
-        return jsonify({
-            'error': 'Invalid request'
-        }), 400
     batch_id = start_batch(settings)
     return jsonify({
         'batch_id': batch_id
     })
 
 
+@require_secret
 @app.route('/photos/batch/<string:batch_id>/', methods=['DELETE'])
 def finish_batch(batch_id):
-    if valid_secret():
-        return jsonify({
-            'error': 'Invalid request'
-        }), 400
     end_batch(batch_id, settings)
     return '', 204
 
 
+@require_secret
 @app.route('/photos/verify/', methods=['GET'])
 def verify_photo():
-    if valid_secret():
-        return jsonify({
-            'error': 'Invalid request'
-        }), 400
-
     filename = request.args.get('filename', '')
     checksum = request.args.get('checksum', '')
     exists = db.file_exists(filename, checksum)
     return '', 204 if exists else 404
 
 
+@require_secret
 @app.route('/photos/', methods=['POST'])
 def add_photo():
     uploaded_file = request.files.get('photo_file')
@@ -138,11 +144,6 @@ def add_photo():
     if not allowed_file(uploaded_file.filename):
         return jsonify({
             'error': 'Invalid file extension'
-        }), 400
-
-    if valid_secret():
-        return jsonify({
-            'error': 'Invalid request'
         }), 400
 
     batch_id = request.form.get('batch_id', '')
