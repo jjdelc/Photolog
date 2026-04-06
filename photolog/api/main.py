@@ -87,7 +87,7 @@ def valid_secret():
 @app.route('/photos/', methods=['GET'])
 def get_photo():
     return jsonify({
-        'last': queue.peek()
+        'last': list(queue.peek())
     }), 200
 
 

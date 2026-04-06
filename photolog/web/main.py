@@ -17,6 +17,7 @@ from photolog.squeue import SqliteQueue
 from photolog.services import base
 
 INDIEAUTH_ENDPOINT = 'https://indieauth.com/auth'
+#INDIEAUTH_ENDPOINT = 'https://indielogin.com/auth'
 
 settings = Settings.load(settings_file)
 db = DB(settings.DB_FILE)
@@ -578,7 +579,8 @@ def login():
             'client_id': client_id
         })
         if r.status_code == 200:
-            me = dict(parse_qsl(r.text)).get('me')
+            #me = dict(parse_qsl(r.text)).get('me')
+            me = r.json()["me"]
             if me == user.get_id():
                 login_user(user)
                 return redirect(url_for('index'))
