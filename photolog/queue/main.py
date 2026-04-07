@@ -33,7 +33,7 @@ def daemon(db, settings, queue):
                 queue.append(job)
             else:
                 # What should it do? Send a notification, record an error?
-                # Don't loose the task
+                # Don't lose the task
                 log.info('Adding job %s to bad jobs' % job['key'])
                 queue.append_bad(job)
         else:
