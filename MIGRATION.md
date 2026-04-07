@@ -48,35 +48,40 @@ Existing test suite in `tests/` is minimal:
 
 **Coverage Gaps (what needs tests):**
 
-| Component | Current | Needed | Notes |
-|-----------|---------|--------|-------|
-| **API endpoints** | 0% | 100% | Routes: `GET /photos/`, `POST /photos/`, `GET /photos/verify/`, `POST /photos/batch/`, `DELETE /photos/batch/<id>/` |
-| **Auth** | 0% | 100% | `valid_secret()` with valid/invalid/missing headers |
-| **File upload** | 0% | 100% | Happy path, duplicate detection, unsupported file types, auth rejection |
-| **ImageJob** | 0% | 100% | Full pipeline: upload → EXIF → thumbnails → S3 → Flickr → GPhotos → cleanup |
-| **VideoJob** | 0% | 100% | Full pipeline: upload → thumbnail → EXIF → S3 video + thumbs → GPhotos → cleanup |
-| **RawFileJob** | 0% | 100% | Full pipeline: upload → S3 → borrow sister JPEG thumbs → cleanup |
-| **ChangeDateJob** | 0% | 100% | DB-only job: find by date → change all to new date |
-| **SqliteQueue** | 0% | 100% | `append`, `popleft`, `peek`, `append_bad`, `get_bad_jobs`, `retry_jobs`, `__len__` |
-| **Job retry** | 0% | 100% | Failed job moved to `bad_jobs` → `retry_jobs()` moves back to queue |
-| **DB methods** | 40% | 100% | Need: `TagManager` (for_picture, tagged_pictures, total_for_tags), `PictureManager` (recent, get_all, find, count, nav, change_date, edit_attribute), `DB` (get_years/months/days, get_pictures_for_year, total_pictures), `TokensDB` |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **API endpoints** | ✅ Done | `tests/test_api.py` — all routes covered |
+| **Auth** | ✅ Done | valid/invalid/missing header cases in `test_api.py` |
+| **File upload** | ✅ Done | happy path, invalid extension, auth rejection, with metadata/target_date; duplicate detection not yet tested |
+| **SqliteQueue** | ✅ Done | `tests/test_squeue.py` — append, popleft, peek, bad_jobs, retry, purge, __len__ |
+| **Job retry (unit)** | ✅ Done | `test_retry_jobs_moves_bad_to_queue` in `test_squeue.py` |
+| **tools/uploader** | ✅ Done (bonus) | `tests/tools/test_uploader.py` — chunks, validate_file, handle_file, upload_directories |
+| **tools/prep_folder** | ✅ Done (bonus) | `tests/tools/test_prep_folder.py` |
+| **Makefile** | ✅ Done | `make test` runs full suite |
+| **ImageJob** | ❌ Missing | Full pipeline: upload → EXIF → thumbnails → S3 → Flickr → GPhotos → cleanup |
+| **VideoJob** | ❌ Missing | Full pipeline: upload → thumbnail → EXIF → S3 video + thumbs → GPhotos → cleanup |
+| **RawFileJob** | ❌ Missing | Full pipeline: upload → S3 → borrow sister JPEG thumbs → cleanup |
+| **ChangeDateJob** | ❌ Missing | DB-only job: find by date → change all to new date |
+| **Job retry (integration)** | ❌ Missing | End-to-end: job fails → lands in `bad_jobs` → `retry_jobs()` re-queues |
+| **DB methods** | ⚠️ Partial | `by_keys` added; still missing: `TagManager` (for_picture, tagged_pictures, total_for_tags), `PictureManager` (recent, get_all, count, nav, change_date, edit_attribute), `DB` (get_years/months/days, get_pictures_for_year, total_pictures), `TokensDB` |
 
 **Work:**
 
-- Audit existing tests in `tests/` — document findings above
-- Add tests for all API endpoints using Flask test client (`app.test_client()`)
-  - `POST /photos/` — happy path, duplicate detection, auth rejection, unsupported file type
-  - `GET /photos/verify/` — found / not found
-  - `POST /photos/batch/`, `DELETE /photos/batch/<id>/`
-  - Auth error cases (missing header, invalid secret)
-- Add integration tests for the job queue (enqueue → process → assert DB state)
-  - `ImageJob` full pipeline with mocked S3/Flickr/GPhotos
-  - `VideoJob`, `RawFileJob`
-  - Retry and failure path (job ends up in `bad_jobs`)
-  - `ChangeDateJob` DB-only pipeline
-- Add unit tests for `SqliteQueue` operations (append, popleft, peek, bad_jobs, retry)
-- Fill remaining DB method gaps (`TagManager`, `PictureManager`, `TokensDB` coverage)
-- Add a `Makefile` so tests run with one command
+- ✅ Audit existing tests in `tests/` — documented above
+- ✅ Add tests for all API endpoints (`tests/test_api.py`)
+  - ✅ `POST /photos/` — happy path, auth rejection, unsupported file type, with metadata/target_date
+  - ✅ `GET /photos/verify/` — found / not found
+  - ✅ `POST /photos/batch/`, `DELETE /photos/batch/<id>/`
+  - ✅ Auth error cases (missing header, invalid secret)
+  - ❌ `POST /photos/` — duplicate detection (file already exists)
+- ✅ Add unit tests for `SqliteQueue` operations (`tests/test_squeue.py`)
+- ✅ Add a `Makefile` so tests run with one command
+- ❌ Add integration tests for the job queue (enqueue → process → assert DB state)
+  - ❌ `ImageJob` full pipeline with mocked S3/Flickr/GPhotos
+  - ❌ `VideoJob`, `RawFileJob`
+  - ❌ Retry and failure path (job ends up in `bad_jobs`) — integration level
+  - ❌ `ChangeDateJob` DB-only pipeline
+- ❌ Fill remaining DB method gaps (`TagManager`, `PictureManager`, `TokensDB` coverage)
 
 **Deployable:** Yes — only test files added, no production code changed.
 
