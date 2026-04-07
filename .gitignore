@@ -9,3 +9,4 @@ photos.db
 *.conf
 tests/files
 dot.photolog
+.claude/

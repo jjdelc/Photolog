@@ -81,7 +81,7 @@ def queue_file(_settings, _queue, uploaded_file, metadata_file, tags, skip,
 
 def valid_secret():
     secret = request.headers.get('X-PHOTOLOG-SECRET', '')
-    return secret != md5(settings.API_SECRET.encode('utf-8')).hexdigest()
+    return secret == md5(settings.API_SECRET.encode('utf-8')).hexdigest()
 
 
 @app.route('/photos/', methods=['GET'])
@@ -93,7 +93,7 @@ def get_photo():
 
 @app.route('/photos/batch/', methods=['POST'])
 def new_batch():
-    if valid_secret():
+    if not valid_secret():
         return jsonify({
             'error': 'Invalid request'
         }), 400
@@ -105,7 +105,7 @@ def new_batch():
 
 @app.route('/photos/batch/<string:batch_id>/', methods=['DELETE'])
 def finish_batch(batch_id):
-    if valid_secret():
+    if not valid_secret():
         return jsonify({
             'error': 'Invalid request'
         }), 400
@@ -115,7 +115,7 @@ def finish_batch(batch_id):
 
 @app.route('/photos/verify/', methods=['GET'])
 def verify_photo():
-    if valid_secret():
+    if not valid_secret():
         return jsonify({
             'error': 'Invalid request'
         }), 400
@@ -140,7 +140,7 @@ def add_photo():
             'error': 'Invalid file extension'
         }), 400
 
-    if valid_secret():
+    if not valid_secret():
         return jsonify({
             'error': 'Invalid request'
         }), 400
@@ -148,10 +148,9 @@ def add_photo():
     batch_id = request.form.get('batch_id', '')
     is_last = request.form.get('is_last', False)
     tags = request.form.get('tags', '')
-    tags = {slugify(t) for t in tags.split(',')}
+    tags = [t for t in (slugify(t) for t in tags.split(',')) if t.strip()]
     skip = request.form.get('skip', '')
-    skip = {slugify(t) for t in skip.split(',')}
-    tags = [t for t in tags if t]  # Strip empty
+    skip = [t for t in (slugify(t) for t in skip.split(',')) if t.strip()]
     target_date = request.form.get('target_date')
     filename = queue_file(settings, queue, uploaded_file, metadata_file,
         tags, skip, batch_id, is_last, target_date)
