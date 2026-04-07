@@ -8,3 +8,4 @@ media
 photos.db
 *.conf
 tests/files
+dot.photolog
