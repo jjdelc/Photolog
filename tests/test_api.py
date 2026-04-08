@@ -4,7 +4,7 @@ from io import BytesIO
 import pytest
 from unittest.mock import patch
 
-from photolog.api.main import app, queue
+from photolog.api.main import app, queue, db as api_db
 from tests.conftest import TEST_API_SECRET
 
 VALID_HASH = md5(TEST_API_SECRET.encode('utf-8')).hexdigest()
@@ -18,12 +18,22 @@ def client():
 @pytest.fixture(autouse=True)
 def clean_queue(setup_test_files):
     # Clear stale cached connections (the DB file is recreated each session)
+
+    # Get a managed connection to the queue database; automatically closes
+    # when exiting the with block
     queue._connection_cache.clear()
     with queue._get_conn() as conn:
         for table in queue._create:
             conn.execute(table)
         conn.execute('DELETE FROM queue')
         conn.execute('DELETE FROM bad_jobs')
+
+    # Get a managed connection to the API database; automatically closes
+    # when exiting the with block
+    api_db._connection_cache.clear()
+    with api_db._get_conn() as conn:
+        for table in api_db._create:
+            conn.execute(table)
 
 
 # GET /photos/ — list queue
@@ -91,6 +101,16 @@ def test_verify_photo_valid_auth_not_found(client):
         headers={'X-PHOTOLOG-SECRET': VALID_HASH}
     )
     assert response.status_code == 404
+
+
+def test_verify_photo_valid_auth_found(client):
+    api_db.add_picture({'name': 'verify_found.jpg', 'checksum': 'verify_csum_abc'}, [])
+    response = client.get(
+        '/photos/verify/',
+        query_string={'filename': 'verify_found.jpg', 'checksum': 'verify_csum_abc'},
+        headers={'X-PHOTOLOG-SECRET': VALID_HASH}
+    )
+    assert response.status_code == 204
 
 
 # POST /photos/ — upload photo
@@ -189,3 +209,16 @@ def test_add_photo_with_target_date(client):
         headers={'X-PHOTOLOG-SECRET': VALID_HASH}
     )
     assert response.status_code == 202
+
+
+def test_add_photo_duplicate_always_queued(client):
+    """POST /photos/ has no duplicate check — uploading same content twice both return 202."""
+    for _ in range(2):
+        data = {'photo_file': (BytesIO(b'duplicate content'), 'dup_test.jpg')}
+        response = client.post(
+            '/photos/',
+            data=data,
+            content_type='multipart/form-data',
+            headers={'X-PHOTOLOG-SECRET': VALID_HASH}
+        )
+        assert response.status_code == 202

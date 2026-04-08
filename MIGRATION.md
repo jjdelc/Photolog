@@ -40,11 +40,7 @@ not executed in production).
 
 **Current Test Coverage:**
 
-Existing test suite in `tests/` is minimal:
-- `test_db.py`: 6 tests covering `TagManager` and `PictureManager` basic operations (add, update, find, file_exists)
-- `test_jobs.py`: 3 tests covering `TagDayJob`, `MassTagJob`, `EditDatesJob` (DB-only jobs, no external services)
-- Test framework: `unittest.TestCase` (stdlib), no pytest, no mocking (all tests use real SQLite files)
-- No test runner config (no `Makefile`, `tox.ini`, `conftest.py`)
+115 tests, all passing. Test framework: pytest with mocking via `unittest.mock`.
 
 **Coverage Gaps (what needs tests):**
 
@@ -52,36 +48,36 @@ Existing test suite in `tests/` is minimal:
 |-----------|--------|-------|
 | **API endpoints** | ✅ Done | `tests/test_api.py` — all routes covered |
 | **Auth** | ✅ Done | valid/invalid/missing header cases in `test_api.py` |
-| **File upload** | ✅ Done | happy path, invalid extension, auth rejection, with metadata/target_date; duplicate detection not yet tested |
+| **File upload** | ✅ Done | happy path, invalid extension, auth rejection, with metadata/target_date, duplicate behaviour documented |
 | **SqliteQueue** | ✅ Done | `tests/test_squeue.py` — append, popleft, peek, bad_jobs, retry, purge, __len__ |
 | **Job retry (unit)** | ✅ Done | `test_retry_jobs_moves_bad_to_queue` in `test_squeue.py` |
 | **tools/uploader** | ✅ Done (bonus) | `tests/tools/test_uploader.py` — chunks, validate_file, handle_file, upload_directories |
 | **tools/prep_folder** | ✅ Done (bonus) | `tests/tools/test_prep_folder.py` |
 | **Makefile** | ✅ Done | `make test` runs full suite |
-| **ImageJob** | ❌ Missing | Full pipeline: upload → EXIF → thumbnails → S3 → Flickr → GPhotos → cleanup |
-| **VideoJob** | ❌ Missing | Full pipeline: upload → thumbnail → EXIF → S3 video + thumbs → GPhotos → cleanup |
-| **RawFileJob** | ❌ Missing | Full pipeline: upload → S3 → borrow sister JPEG thumbs → cleanup |
-| **ChangeDateJob** | ❌ Missing | DB-only job: find by date → change all to new date |
-| **Job retry (integration)** | ❌ Missing | End-to-end: job fails → lands in `bad_jobs` → `retry_jobs()` re-queues |
-| **DB methods** | ⚠️ Partial | `by_keys` added; still missing: `TagManager` (for_picture, tagged_pictures, total_for_tags), `PictureManager` (recent, get_all, count, nav, change_date, edit_attribute), `DB` (get_years/months/days, get_pictures_for_year, total_pictures), `TokensDB` |
+| **ImageJob** | ✅ Done | `tests/test_queue_integration.py` — full pipeline with mocked S3/Flickr/GPhotos; skip field; FLICKR_ENABLED=False |
+| **VideoJob** | ✅ Done | `tests/test_queue_integration.py` — full pipeline with mocked S3/GPhotos |
+| **RawFileJob** | ✅ Done | `tests/test_queue_integration.py` — with and without sister JPEG thumb borrowing |
+| **ChangeDateJob** | ✅ Done | `tests/test_queue_integration.py` — moves all pictures on origin day; no-op when day is empty |
+| **Job retry (integration)** | ✅ Done | `tests/test_queue_integration.py` — failure → bad_jobs after max attempts; retry_jobs re-queues |
+| **DB methods** | ✅ Done | `tests/test_db.py` — `TagManager` (for_picture, tagged_pictures, total_for_tags), `PictureManager` (recent, get_all, count, nav, change_date, edit_attribute), `DB` (get_years/months/days, get_pictures_for_year, total_pictures, total_for_year), `TokensDB` (save, get, update, needs_refresh) |
 
 **Work:**
 
 - ✅ Audit existing tests in `tests/` — documented above
 - ✅ Add tests for all API endpoints (`tests/test_api.py`)
   - ✅ `POST /photos/` — happy path, auth rejection, unsupported file type, with metadata/target_date
-  - ✅ `GET /photos/verify/` — found / not found
+  - ✅ `GET /photos/verify/` — found (204) and not found (404)
   - ✅ `POST /photos/batch/`, `DELETE /photos/batch/<id>/`
   - ✅ Auth error cases (missing header, invalid secret)
-  - ❌ `POST /photos/` — duplicate detection (file already exists)
+  - ✅ `POST /photos/` — duplicate behaviour: no server-side dedup, both uploads return 202
 - ✅ Add unit tests for `SqliteQueue` operations (`tests/test_squeue.py`)
 - ✅ Add a `Makefile` so tests run with one command
-- ❌ Add integration tests for the job queue (enqueue → process → assert DB state)
-  - ❌ `ImageJob` full pipeline with mocked S3/Flickr/GPhotos
-  - ❌ `VideoJob`, `RawFileJob`
-  - ❌ Retry and failure path (job ends up in `bad_jobs`) — integration level
-  - ❌ `ChangeDateJob` DB-only pipeline
-- ❌ Fill remaining DB method gaps (`TagManager`, `PictureManager`, `TokensDB` coverage)
+- ✅ Add integration tests for the job queue (enqueue → process → assert DB state)
+  - ✅ `ImageJob` full pipeline with mocked S3/Flickr/GPhotos
+  - ✅ `VideoJob`, `RawFileJob` (including sister-JPEG thumb borrowing)
+  - ✅ Retry and failure path (job ends up in `bad_jobs`) — integration level
+  - ✅ `ChangeDateJob` DB-only pipeline
+- ✅ Fill remaining DB method gaps (`TagManager`, `PictureManager`, `TokensDB` coverage)
 
 **Deployable:** Yes — only test files added, no production code changed.
 
@@ -89,9 +85,11 @@ Existing test suite in `tests/` is minimal:
 
 ## Step 2 — Modernize Packaging (`uv` + `pyproject.toml`)
 
-**Goal:** Replace `setup.py` with `pyproject.toml` managed by `uv`. Remove the committed `venv/` directory.
+**Goal:** Replace `setup.py` with `pyproject.toml` managed by `uv`. Remove the 
+  committed `venv/` directory.
 
-**Why second:** Packaging is a pre-requisite for cleanly pinning and upgrading dependencies. It touches no runtime logic.
+**Why second:** Packaging is a pre-requisite for cleanly pinning and upgrading 
+  dependencies. It touches no runtime logic.
 
 **Work:**
 
