@@ -37,6 +37,26 @@ have a quick view on what's currently backed up.
 
 # Setup
 
+## Development Setup
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+
+```
+uv sync
+```
+
+Run the test suite:
+
+```
+make test
+```
+
+Run a service:
+
+```
+SETTINGS=settings.conf uv run start_api
+```
+
 ## Settings
 
 You need to provide an environment variable `SETTINGS` that should point to

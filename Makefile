@@ -15,7 +15,10 @@ setup-test:
 	@echo "DEBUG: false" >> $(TEST_SETTINGS_FILE)
 
 test: setup-test
-	SETTINGS=$(TEST_SETTINGS_FILE) python -m pytest tests/ -v
+	SETTINGS=$(TEST_SETTINGS_FILE) uv run pytest tests/ -v
+
+sync:
+	uv sync --all-groups
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
