@@ -29,7 +29,7 @@ Each step below is a standalone branch that can be deployed independently. Later
 
 ---
 
-## Step 1 — Baseline Test Suite (deploy this first)
+## Step 1 — Baseline Test Suite (deploy this first) ✅
 
 **Goal:** Establish a passing test suite against the current codebase so every 
 subsequent step has a safety net.
@@ -37,6 +37,8 @@ subsequent step has a safety net.
 **Why first:** Without tests, every later change is flying blind. This step adds
 no functional change, so it's safe to deploy immediately (the new test files are
 not executed in production).
+
+**Status:** ✅ COMPLETE (commit 357de76 and earlier)
 
 **Current Test Coverage:**
 
@@ -83,7 +85,7 @@ not executed in production).
 
 ---
 
-## Step 2 — Modernize Packaging (`uv` + `pyproject.toml`)
+## Step 2 — Modernize Packaging (`uv` + `pyproject.toml`) ✅
 
 **Goal:** Replace `setup.py` with `pyproject.toml` managed by `uv`. Remove the 
   committed `venv/` directory.
@@ -91,19 +93,24 @@ not executed in production).
 **Why second:** Packaging is a pre-requisite for cleanly pinning and upgrading 
   dependencies. It touches no runtime logic.
 
-**Work:**
+**Status:** ✅ COMPLETE (commits b5b8904, 074e56a, a20f920)
 
-- Add `pyproject.toml` with:
+**Work Completed:**
+
+- ✅ Created `pyproject.toml` with:
   - `[project]` metadata (name, version, dependencies)
   - `[project.scripts]` replacing `setup.py` entry points
-  - `requires-python = ">=3.6"` (matches current runtime, upgraded in Step 3)
-- Pin exact dependency versions in `uv.lock`
-- Add `.python-version` file
-- Remove `venv/` from repo, add to `.gitignore`
-- Update README with `uv sync` setup instructions
-- Update CI to use `uv run`
+  - `requires-python = ">=3.10"` (supports current venv; will be upgraded in Step 3)
+- ✅ Pinned exact dependency versions in `uv.lock` (34 packages including gunicorn)
+- ✅ Added `.python-version` file (pins to 3.10)
+- ✅ Deleted `setup.py` (venv already not in git history)
+- ✅ Updated README with `uv sync` setup instructions
+- ✅ Added GitHub Actions CI workflow (`.github/workflows/test.yml`)
+- ✅ Updated Makefile: `test` target now uses `uv run pytest`; added `make sync` target
+- ✅ Updated deployment scripts (`photos.isgeek.net/`) to use `uv run` with full path
+- ✅ All 115 tests passing with new setup
 
-**Deployable:** Yes — same dependencies, same code, just a different install mechanism. Update deploy scripts to use `uv run` instead of `venv/bin/`.
+**Deployable:** Yes — same dependencies, same code, just a different install mechanism. Deploy scripts updated to use `/home/jj/.local/bin/uv run` for supervisor compatibility.
 
 ---
 
