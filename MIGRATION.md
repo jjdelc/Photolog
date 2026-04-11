@@ -138,32 +138,36 @@ not executed in production).
 
 ---
 
-## Step 4 — Upgrade Dependencies
+## Step 4 — Upgrade Dependencies ✅
 
 **Goal:** Replace all outdated dependencies with current maintained versions.
 
 **Why fourth:** Python 3.11 (Step 3) may already break old packages, so this step resolves those conflicts. The test suite (Step 1) validates nothing breaks.
 
-**Key upgrades:**
+**Status:** ✅ COMPLETE
+
+**Upgrades Completed:**
 
 | Old | New | Notes |
 |-----|-----|-------|
-| `Flask==0.10.1` | `Flask>=3.0` | Major version bump; review `Blueprint`, `before_request` changes |
-| `Flask-Login==0.4.0` | `Flask-Login>=0.6` | Minor API differences |
-| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34`~~ | ✅ Done in Step 3 (Python 3.11 blocker) |
-| `Pillow==3.0.0` | `Pillow>=10.0` | Review deprecated APIs |
-| `PyYAML==3.11` | `PyYAML>=6.0` | Safe loader required by default |
-| `flickrapi==2.1.2` | `flickrapi>=2.4` | Check if maintained; may need replacement |
-| `piexif==1.0.2` | `piexif>=1.1` | Or switch to `Pillow` built-in EXIF |
-| `ExifRead==2.1.2` | `exifread>=3.0` | |
+| `Flask>=2.2.3` | `Flask>=3.0` | Fixed breaking API change: `send_file(attachment_filename=)` → `download_name=` in `web/main.py:564` |
+| `Flask-Login>=0.6.2` | (no change) | Already meets target |
+| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34.0`~~ | ✅ Done in Step 3 (Python 3.11 blocker); tightened floor from 1.26.0 |
+| `Pillow>=3.0.0` | `Pillow>=10.0.0` | No deprecated API usage found; all tests passing |
+| `PyYAML>=6.0` | (no change) | Already meets target |
+| `flickrapi>=2.1.2` | `flickrapi>=2.4,<3` | Upper bound prevents silent breakage from 3.x (removed `shorturl` module) |
+| `piexif>=1.0.2` | `piexif>=1.1.0` | Minor bump |
+| `exifread>=2.1.2` | `exifread>=3.0.0` | Audited `services/base.py` exifread tag usage — all tag names remain valid |
 
 **Work:**
 
-- Upgrade one dependency at a time in a sub-branch
-- Run tests after each upgrade
-- Update `uv.lock` with final pinned versions
+- ✅ Audited codebase for breaking API changes in each library
+- ✅ Fixed `web/main.py:564` — renamed `attachment_filename` to `download_name` for Flask 3.x compatibility
+- ✅ Updated `pyproject.toml` with new dependency floors
+- ✅ Ran `uv sync` to regenerate `uv.lock`
+- ✅ All 115 tests passing
 
-**Deployable:** Yes — functionally equivalent but on maintained libraries.
+**Deployable:** Yes — functionally equivalent but on maintained libraries. One code change (Flask API) is backward-compatible and safe to deploy.
 
 ---
 
