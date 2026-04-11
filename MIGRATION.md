@@ -17,7 +17,7 @@
 
 1. Full test coverage so every change is validated before deploy
 2. Modern packaging (`uv` + `pyproject.toml`)
-3. Recent Python version (3.12+)
+3. Recent Python version (3.11+)
 4. Up-to-date, maintained dependencies
 5. Deployment strategy confirmed adequate (or improved)
 
@@ -114,26 +114,27 @@ not executed in production).
 
 ---
 
-## Step 3 — Upgrade Python to 3.12
+## Step 3 — Upgrade Python to 3.11
 
-**Goal:** Pin Python to 3.12 (current stable), remove any Python 2 compatibility shims.
+**Goal:** Pin Python to 3.11, remove any Python 2 compatibility shims.
 
 **Why third:** Python version is a runtime concern; packaging must be modernized first (Step 2) to make this clean.
 
-**Status:** ✅ COMPLETE (commit 9b10820)
+**Status:** ✅ COMPLETE (adjusted from 3.12 to 3.11 for server compatibility)
 
 **Work:**
 
-- ✅ Set `requires-python = ">=3.12"` in `pyproject.toml`
-- ✅ Remove `_dummy_thread` / `_thread` compatibility import in `db.py` (Python 3.12 has `_thread` always)
-- ✅ Run full test suite (from Step 1) under 3.12 — all 115 tests passing
-- ✅ Update CI to test on 3.12
+- ✅ Set `requires-python = ">=3.11"` in `pyproject.toml`
+- ✅ Remove `_dummy_thread` / `_thread` compatibility import in `db.py` (Python 3.11 has `_thread` always)
+- ✅ Run full test suite (from Step 1) under 3.11 — all 115 tests passing
+- ✅ Update CI to test on 3.11
+- ✅ Update `.python-version` to 3.11
 
 **Unblocking work:**
 
-- ✅ Migrate from `boto==2.38.0` to `boto3>=1.26.0` — old boto was incompatible with Python 3.12 and broke test collection. Rewrote `s3.py` to use boto3 client API. This was moved forward from Step 4 as a hard blocker for Step 3.
+- ✅ Migrate from `boto==2.38.0` to `boto3>=1.26.0` — old boto was incompatible with Python 3.12 and broke test collection. Rewrote `s3.py` to use boto3 client API. This was moved forward from Step 4 as a hard blocker. boto3 supports Python 3.11+ so no issues with the 3.11 target.
 
-**Deployable:** Yes — update server Python version and redeploy.
+**Deployable:** Yes — update server Python version to 3.11 and redeploy.
 
 ---
 
@@ -141,7 +142,7 @@ not executed in production).
 
 **Goal:** Replace all outdated dependencies with current maintained versions.
 
-**Why fourth:** Python 3.12 (Step 3) may already break old packages, so this step resolves those conflicts. The test suite (Step 1) validates nothing breaks.
+**Why fourth:** Python 3.11 (Step 3) may already break old packages, so this step resolves those conflicts. The test suite (Step 1) validates nothing breaks.
 
 **Key upgrades:**
 
@@ -149,7 +150,7 @@ not executed in production).
 |-----|-----|-------|
 | `Flask==0.10.1` | `Flask>=3.0` | Major version bump; review `Blueprint`, `before_request` changes |
 | `Flask-Login==0.4.0` | `Flask-Login>=0.6` | Minor API differences |
-s| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34`~~ | ✅ Done in Step 3 (3.12 blocker) |
+| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34`~~ | ✅ Done in Step 3 (Python 3.11 blocker) |
 | `Pillow==3.0.0` | `Pillow>=10.0` | Review deprecated APIs |
 | `PyYAML==3.11` | `PyYAML>=6.0` | Safe loader required by default |
 | `flickrapi==2.1.2` | `flickrapi>=2.4` | Check if maintained; may need replacement |
@@ -207,7 +208,7 @@ s| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34`~~ | ✅ Done in Step 3 (3.12 blocker) |
 ```
 Step 1  →  Tests + CI                (safe, no prod change)
 Step 2  →  uv + pyproject.toml      (packaging only)
-Step 3  →  Python 3.12              (runtime upgrade)
+Step 3  →  Python 3.11              (runtime upgrade)
 Step 4  →  Dependency upgrades      (boto3, Flask 3, etc.)
 Step 5  →  Security hardening       (secrets, CSRF, HMAC)
 Step 6  →  Deployment review        (docs + config)
