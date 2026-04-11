@@ -12,6 +12,9 @@ setup-test:
 	@echo "API_SECRET: test-secret" > $(TEST_SETTINGS_FILE)
 	@echo "DB_FILE: /tmp/test.db" >> $(TEST_SETTINGS_FILE)
 	@echo "UPLOAD_FOLDER: /tmp/uploads" >> $(TEST_SETTINGS_FILE)
+	@echo "SECRET_KEY: test-secret-key-for-flask" >> $(TEST_SETTINGS_FILE)
+	@echo "AUTH_ME: test@example.com" >> $(TEST_SETTINGS_FILE)
+	@echo "DOMAIN: http://localhost:5001" >> $(TEST_SETTINGS_FILE)
 	@echo "DEBUG: false" >> $(TEST_SETTINGS_FILE)
 
 test: setup-test

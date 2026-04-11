@@ -160,7 +160,10 @@ def index():
 @app.route('/photo/', methods=['GET'])
 @login_required
 def photo_list():
-    page = int(request.args.get('page', '1'))
+    try:
+        page = int(request.args.get('page', '1'))
+    except ValueError:
+        abort(400)
     pictures = pictures_for_page(db, page)
     db_total = db.total_pictures()
     paginator = get_paginator(db_total, PAGE_SIZE, page)
@@ -224,6 +227,7 @@ def tag_picture(key):
 @login_required
 def edit_attr(key):
     picture = db.pictures.by_key(key)
+    allowed_attrs = {'tags'}
     if request.method == 'GET':
         return render_template('edit_attr.html', **{
             'picture': picture,
@@ -233,9 +237,12 @@ def edit_attr(key):
         attr = request.form['attr']
         value = request.form['value']
         confirm = request.form.get('confirm')
+        if attr not in allowed_attrs:
+            abort(400)  # Cannot edit just _any_ attribute, geez!
         if confirm and attr in picture:
             db.pictures.edit_attribute(key, attr, value)
             return redirect(url_for('picture_detail_blob', key=key))
+        return redirect(url_for('picture_detail_blob', key=key))
 
 
 @app.route('/photo/<string:key>/blob/')
@@ -279,22 +286,31 @@ def edit_dates():
         return render_template('edit_dates.html')
     else:
         changes = []
-        for field_n in range(1, 9):
-            url = request.form.get('key_%s' % field_n).strip()
-            if not url:
-                continue
-            key = get_key(url)
-            date = request.form.get('date_%s' % field_n).strip()
-            if key and date:
-                changes.append((key, datetime.strptime(date, '%Y-%m-%d')))
+        try:
+            for field_n in range(1, 9):
+                url = request.form.get('key_%s' % field_n)
+                if not url:
+                    continue
+                url = url.strip()
+                if not url:
+                    continue
+                key = get_key(url)
+                date = request.form.get('date_%s' % field_n)
+                if date:
+                    date = date.strip()
+                if key and date:
+                    changes.append((key, datetime.strptime(date, '%Y-%m-%d')))
 
-        multikey = request.form.get('multikeys')
-        if multikey:
-            keys = [get_key(k) for k in multikey.split()]
-            dest_date = datetime.strptime(request.form.get('multikeys_dates'),
-                '%Y-%m-%d')
-            for key in keys:
-                changes.append((key, dest_date))
+            multikey = request.form.get('multikeys')
+            if multikey:
+                keys = [get_key(k) for k in multikey.split()]
+                multikeys_dates = request.form.get('multikeys_dates')
+                if multikeys_dates:
+                    dest_date = datetime.strptime(multikeys_dates, '%Y-%m-%d')
+                    for key in keys:
+                        changes.append((key, dest_date))
+        except ValueError:
+            abort(400)
         if changes:
             queue.append({
                 'type': 'edit-dates',
@@ -309,10 +325,17 @@ def edit_dates():
 @login_required
 def change_date():
     if request.method == 'POST':
-        origin = request.form.get('origin').strip()
-        target = request.form.get('target').strip()
-        origin = datetime.strptime(origin, '%Y-%m-%d')
-        target = datetime.strptime(target, '%Y-%m-%d')
+        origin = request.form.get('origin')
+        target = request.form.get('target')
+        if not origin or not target:
+            abort(400)
+        origin = origin.strip()
+        target = target.strip()
+        try:
+            origin = datetime.strptime(origin, '%Y-%m-%d')
+            target = datetime.strptime(target, '%Y-%m-%d')
+        except ValueError:
+            abort(400)
         queue.append({
             'type': 'change-date',
             'key': uuid.uuid4().hex,
@@ -327,7 +350,10 @@ def change_date():
 @app.route('/tags/<string:tag_list>/')
 @login_required
 def view_tags(tag_list):
-    page = int(request.args.get('page', '1'))
+    try:
+        page = int(request.args.get('page', '1'))
+    except ValueError:
+        abort(400)
     tags = [t.lower() for t in tag_list.split(',') if t]
     pictures = pictures_for_page(db, page, tags)
     tagged_total = db.tags.total_for_tags(tags)
@@ -416,6 +442,10 @@ def view_month(year, month):
 @app.route('/date/<int:year>/<int:month>/<int:day>/')
 @login_required
 def view_day(year, month, day):
+    try:
+        this_day = datetime(year, month, day)
+    except ValueError:
+        abort(404)
     page = int(request.args.get('page', '1'))
     params = {
         'year': year,
@@ -430,7 +460,6 @@ def view_day(year, month, day):
     years = db.get_years()
     present_months = db.get_months(year)
     active_days = db.get_days(year, month)
-    this_day = datetime(year, month, day)
     yesterday = this_day + timedelta(-1)
     tomorrow = this_day + timedelta(1)
     ctx = {
@@ -572,8 +601,8 @@ def backup():
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
-    code = request.args.get('code')
-    me = request.args.get('me')
+    code = request.args.get('code') or request.form.get('code')
+    me = request.args.get('me') or request.form.get('me')
     redirect_uri = urljoin(settings.DOMAIN, url_for('login'))
     client_id = settings.DOMAIN
     if code and me:

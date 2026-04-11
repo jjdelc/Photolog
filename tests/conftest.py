@@ -14,6 +14,10 @@ os.makedirs(TEST_FILES, exist_ok=True)
 _settings_content = f"""DB_FILE: {TEST_DB_FILE}
 UPLOAD_FOLDER: {TEST_FILES}
 API_SECRET: {TEST_API_SECRET}
+SECRET_KEY: test-secret-key-for-flask
+AUTH_ME: test@example.com
+DEBUG: true
+DOMAIN: http://localhost:5001
 """
 with open(TEST_SETTINGS_FILE, 'w') as _f:
     _f.write(_settings_content)
