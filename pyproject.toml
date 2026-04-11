@@ -1,7 +1,7 @@
 [project]
 name = "photolog"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "Flask>=2.2.3",
     "Flask-Login>=0.6.2",
@@ -11,7 +11,7 @@ dependencies = [
     "Pillow>=3.0.0",
     "piexif>=1.0.2",
     "exifread>=2.1.2",
-    "boto>=2.38.0",
+    "boto3>=1.26.0",
     "flickrapi>=2.1.2",
     "gunicorn>=21.0",
 ]

@@ -6,5 +6,3 @@ These are the goals:
 * Upgrade to a recent python version
 * Upgrade to modern and maintained dependencies 
 * Make sure the deployment strategy is still adequate 
-
-LEt
