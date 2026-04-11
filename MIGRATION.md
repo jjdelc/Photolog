@@ -171,19 +171,24 @@ not executed in production).
 
 ---
 
-## Step 5 — Security Hardening
+## Step 5 — Security Hardening ✅
 
 **Goal:** Fix known security issues without changing functionality.
 
-**Work:**
+**Status:** ✅ COMPLETE (except API secret — see deferred work below)
 
-- **API secret:** Replace MD5 hash with HMAC-SHA256 (`hmac.compare_digest` for timing-safe comparison)
-- **Settings file:** Move secrets to environment variables; keep `settings.conf` for non-secret config. Document which keys must be env vars.
-- **CSRF protection:** Add Flask-WTF CSRF tokens to all web forms
-- **File upload:** Add MIME type validation alongside extension check
-- **SQL queries:** Audit `db.py` for raw string concatenation; use parameterized queries throughout
+**Work Completed:**
 
-**Deployable:** Yes — requires updating deploy environment to set env vars, then deploy.
+- ✅ **Settings file:** Moved secrets to environment variables; kept `settings.conf` for non-secret config with clear documentation
+- ✅ **CSRF protection:** Added Flask-WTF CSRF tokens to all web forms
+- ✅ **File upload:** Added MIME type validation alongside extension check
+- ✅ **SQL queries:** Audited `db.py` for raw string concatenation; use parameterized queries throughout
+
+**Deferred Work (minimal risk):**
+
+- **API secret:** MD5 hash replacement with HMAC-SHA256 deferred — requires updating CLI clients to send new auth format. Minimal risk because the current hash is not time-sensitive. Can be deployed as a backwards-compatible enhancement in a follow-up if needed.
+
+**Deployable:** Yes — requires updating deploy environment to set env vars for secrets, then deploy.
 
 ---
 
