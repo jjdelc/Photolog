@@ -31,8 +31,8 @@ class TestEditAttributeRoute:
         response = authenticated_client.post(
             f'/photo/{sample_picture["key"]}/edit/attr/',
             data={
-                'attr': 'name',
-                'value': 'new-name.jpg',
+                'attr': 'tags',
+                'value': 'new-tag',
                 # Missing 'confirm' flag
             },
             follow_redirects=False
@@ -46,8 +46,8 @@ class TestEditAttributeRoute:
         response = authenticated_client.post(
             f'/photo/{sample_picture["key"]}/edit/attr/',
             data={
-                'attr': 'name',
-                'value': 'new-name.jpg',
+                'attr': 'tags',
+                'value': 'new-tag',
                 'confirm': 'yes',
             },
             follow_redirects=False
@@ -69,8 +69,8 @@ class TestEditAttributeRoute:
             follow_redirects=False
         )
 
-        # Should not process invalid attribute
-        assert response.status_code in [302, 200]
+        # Should reject invalid attribute with 400
+        assert response.status_code == 400
 
     def test_edit_attr_invalid_key(self, authenticated_client):
         """GET with non-existent key raises error"""
@@ -82,7 +82,7 @@ class TestEditAttributeRoute:
         response = authenticated_client.post(
             f'/photo/{sample_picture["key"]}/edit/attr/',
             data={
-                'attr': 'name',
+                'attr': 'tags',
                 'value': '',
                 'confirm': 'yes',
             },
