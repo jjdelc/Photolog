@@ -561,7 +561,7 @@ def backup():
     if request.method == 'POST':
         today = datetime.now().date()
         return send_file(settings.DB_FILE,
-            as_attachment=True, attachment_filename='backup-%s.db' % today)
+            as_attachment=True, download_name='backup-%s.db' % today)
     db_size = human_size(os.stat(settings.DB_FILE).st_size)
     return render_template('backup.html', db_size=db_size)
 
