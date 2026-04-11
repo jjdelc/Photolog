@@ -2,6 +2,7 @@
 {% block content %}
 <section class="extra-info">
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <table>
         <tr><td><input name="key_1" placeholder="Url..."/></td><td><input type="date" name="date_1" placeholder="YYYY-MM-DD"/> </td></tr>
         <tr><td><input name="key_2" placeholder="Url..."/></td><td><input type="date" name="date_2" placeholder="YYYY-MM-DD"/> </td></tr>
@@ -20,6 +21,7 @@
 
 <h2>Change day</h2>
 <form method="post" action="{{ url_for('change_date') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <table>
         <tr>
             <td><label for="id_origin">Original</label></td>

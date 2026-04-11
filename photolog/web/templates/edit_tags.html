@@ -22,6 +22,7 @@
 {% endfor %}
 </ul>
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <p><label for="id_current_tags">Change tags</label>
         <input autofocus type="text" id="id_current_tags" name="tags" value="{{ current_tags }}"/>
         <input type="submit" value="Change">

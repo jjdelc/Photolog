@@ -5,6 +5,23 @@ from time import time
 from _thread import get_ident
 
 
+# Whitelist of allowed field names for dynamic SQL queries
+ALLOWED_PICTURE_FIELDS = {
+    'id', 'name', 'filename', 'notes', 'key', 'checksum', 'original',
+    'thumb', 'medium', 'web', 'large', 'flickr', 'gphotos',
+    'year', 'month', 'day', 'width', 'height', 'size', 'camera',
+    'upload_date', 'format', 'taken_time', 'upload_time', 'exif_read',
+    'date_taken'
+}
+
+
+def validate_field_name(field):
+    """Validate that a field name is in the whitelist."""
+    if field not in ALLOWED_PICTURE_FIELDS:
+        raise ValueError(f'Invalid field name: {field}')
+    return field
+
+
 # http://stackoverflow.com/a/3300514/43490
 def dict_factory(cursor, row):
     d = {}
@@ -145,6 +162,8 @@ class PictureManager:
                                              picture_key])
 
     def edit_attribute(self, picture_key, attr, value):
+        # Validate field name to prevent SQL injection
+        validate_field_name(attr)
         with self.db._get_conn() as conn:
             return conn.execute(self._change_attr % attr, (value, picture_key))
 
@@ -163,29 +182,41 @@ class PictureManager:
     def find_one(self, params):
         with self.db._get_conn() as conn:
             fields, values = zip(*params.items())
-            query = self._find_picture % ' AND '.join('%s = ?' % f for f in fields)
+            # Validate field names to prevent SQL injection
+            validated_fields = [validate_field_name(f) for f in fields]
+            query = self._find_picture % ' AND '.join('%s = ?' % f for f in validated_fields)
             return conn.execute(query, values).fetchone()
 
     def find(self, params, limit=None, offset=None):
         with self.db._get_conn() as conn:
             fields, values = zip(*params.items())
-            query = self._find_pictures % ' AND '.join('%s = ?' % f for f in fields)
-            params = []
+            # Validate field names to prevent SQL injection
+            validated_fields = [validate_field_name(f) for f in fields]
+            query = self._find_pictures % ' AND '.join(
+                '%s = ?' % f for f in validated_fields
+            )
+            query_params = []
             if limit:
                 query += ' LIMIT ?'
-                params.append(limit)
+                query_params.append(limit)
             if offset:
                 query += ' OFFSET ?'
-                params.append(offset)
-            return conn.execute(query, list(values) + params)
+                query_params.append(offset)
+            return conn.execute(query, list(values) + query_params)
 
     def count(self, params):
         with self.db._get_conn() as conn:
             fields, values = zip(*params.items())
-            query = self._count_pictures % ' AND '.join('%s = ?' % f for f in fields)
+            # Validate field names to prevent SQL injection
+            validated_fields = [validate_field_name(f) for f in fields]
+            query = self._count_pictures % ' AND '.join(
+                '%s = ?' % f for f in validated_fields
+            )
             return conn.execute(query, values).fetchone()['count']
 
     def update(self, key, attr, value):
+        # Validate field name to prevent SQL injection
+        validate_field_name(attr)
         with self.db._get_conn() as conn:
             return conn.execute(self._update_picture % attr, [value, key])
 

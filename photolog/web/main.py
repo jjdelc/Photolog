@@ -9,6 +9,7 @@ import xml.etree.ElementTree as etree
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, abort, send_file
 from flask_login import LoginManager, login_required, login_user, UserMixin, logout_user
+from flask_wtf.csrf import CSRFProtect
 
 from photolog import web_logger as log, settings_file
 from photolog.db import DB
@@ -24,6 +25,9 @@ db = DB(settings.DB_FILE)
 queue = SqliteQueue(settings.DB_FILE)
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
+
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)

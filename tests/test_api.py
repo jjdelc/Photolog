@@ -154,7 +154,7 @@ def test_add_photo_invalid_extension(client):
         headers={'X-PHOTOLOG-SECRET': VALID_HASH}
     )
     assert response.status_code == 400
-    assert 'Invalid file extension' in response.get_json()['error']
+    assert 'Invalid file' in response.get_json()['error']
 
 
 def test_add_photo_invalid_auth(client):

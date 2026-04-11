@@ -18,6 +18,7 @@
 {{ blob }}
 </pre>
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <p><label for="id_attr">Change attr</label>
         <input autofocus type="text" id="id_attr" name="attr"/>
         <input type="text" name="value"/>

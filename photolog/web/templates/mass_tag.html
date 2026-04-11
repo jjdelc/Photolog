@@ -2,6 +2,7 @@
 {% block content %}
 <section class="extra-info">
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <p><label for="id_keys">Pictures to tag</label><br/><textarea
             placeholder="One URL or Key per line"
             id="id_keys" name="keys"

@@ -18,6 +18,7 @@
 <a href="{{ url_for('purge_form') }}">Purge jobs</a>
 </p>
 <form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 <p>
 <input type="submit" value="Retry all">
 </p>
