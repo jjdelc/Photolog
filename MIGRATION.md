@@ -120,12 +120,18 @@ not executed in production).
 
 **Why third:** Python version is a runtime concern; packaging must be modernized first (Step 2) to make this clean.
 
+**Status:** ✅ COMPLETE (commit 9b10820)
+
 **Work:**
 
-- Set `requires-python = ">=3.12"` in `pyproject.toml`
-- Remove `_dummy_thread` / `_thread` compatibility import in `db.py` (Python 3.12 has `_thread` always)
-- Run full test suite (from Step 1) under 3.12 and fix any failures
-- Update CI to test on 3.12
+- ✅ Set `requires-python = ">=3.12"` in `pyproject.toml`
+- ✅ Remove `_dummy_thread` / `_thread` compatibility import in `db.py` (Python 3.12 has `_thread` always)
+- ✅ Run full test suite (from Step 1) under 3.12 — all 115 tests passing
+- ✅ Update CI to test on 3.12
+
+**Unblocking work:**
+
+- ✅ Migrate from `boto==2.38.0` to `boto3>=1.26.0` — old boto was incompatible with Python 3.12 and broke test collection. Rewrote `s3.py` to use boto3 client API. This was moved forward from Step 4 as a hard blocker for Step 3.
 
 **Deployable:** Yes — update server Python version and redeploy.
 
@@ -143,17 +149,12 @@ not executed in production).
 |-----|-----|-------|
 | `Flask==0.10.1` | `Flask>=3.0` | Major version bump; review `Blueprint`, `before_request` changes |
 | `Flask-Login==0.4.0` | `Flask-Login>=0.6` | Minor API differences |
-| `boto==2.38.0` | `boto3>=1.34` | Complete API rewrite — see below |
+s| ~~`boto==2.38.0`~~ | ~~`boto3>=1.34`~~ | ✅ Done in Step 3 (3.12 blocker) |
 | `Pillow==3.0.0` | `Pillow>=10.0` | Review deprecated APIs |
 | `PyYAML==3.11` | `PyYAML>=6.0` | Safe loader required by default |
 | `flickrapi==2.1.2` | `flickrapi>=2.4` | Check if maintained; may need replacement |
 | `piexif==1.0.2` | `piexif>=1.1` | Or switch to `Pillow` built-in EXIF |
 | `ExifRead==2.1.2` | `exifread>=3.0` | |
-
-**boto → boto3 migration** (largest change):
-- `s3.py` uses `boto.connect_s3()` — rewrite to use `boto3.client('s3')`
-- Multipart upload API is different
-- Test thoroughly — S3 is the primary storage
 
 **Work:**
 
