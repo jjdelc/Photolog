@@ -2,10 +2,7 @@ import os
 import sqlite3
 from time import time
 
-try:
-    from _thread import get_ident
-except ImportError:
-    from _dummy_thread import get_ident
+from _thread import get_ident
 
 
 # http://stackoverflow.com/a/3300514/43490
