@@ -3,9 +3,7 @@ import math
 import json
 import uuid
 import requests
-from io import StringIO
 from urllib.parse import urljoin
-import xml.etree.ElementTree as etree
 from datetime import datetime, timedelta
 from flask import (
     Flask,
@@ -30,6 +28,7 @@ from photolog.db import DB
 from photolog.settings import Settings
 from photolog.squeue import SqliteQueue
 from photolog.services.api import base
+from photolog.services.web import main as web_service
 
 INDIEAUTH_ENDPOINT = "https://indieauth.com/auth"
 # INDIEAUTH_ENDPOINT = 'https://indielogin.com/auth'
@@ -69,88 +68,6 @@ def load_user(user_id):
 PAGE_SIZE = 24
 
 
-def human_size(size):
-    size_name = ["B", "KB", "MB", "GB"]
-    i = int(math.floor(math.log(size, 1024)))
-    p = math.pow(1024, i)
-    s = round(size / p, 2)
-    if s > 0:
-        return "%s%s" % (s, size_name[i])
-    return "0B"
-
-
-def get_paginator(total, page_size, current):
-    total_pages = math.ceil(total / page_size)
-    next_page = current + 1 if current < total_pages else None
-    prev_page = current - 1 if current > 1 else None
-    adjacent_size = 2
-    page_start = current - adjacent_size
-    page_start = page_start if page_start > 1 else 1
-    page_end = page_start + 1 + adjacent_size * 2
-    adjacent_pages = range(page_start, page_end)
-    adjacent = [x for x in adjacent_pages if 0 < x <= total_pages]
-    return {
-        "current": current,
-        "total_pages": total_pages,
-        "next": next_page,
-        "prev": prev_page,
-        "adjacent": adjacent,
-    }
-
-
-def pictures_for_page(db, page_num, tags=None, year=None):
-    offset, limit = (page_num - 1) * PAGE_SIZE, PAGE_SIZE
-    if tags:
-        db_pics = list(db.tags.tagged_pictures(tags, limit, offset))
-    elif year:
-        db_pics = list(db.get_pictures_for_year(year, limit, offset))
-    else:
-        db_pics = list(db.pictures.get_all(limit, offset))
-    return db_pics
-
-
-def get_flickr_data(picture):
-    data = picture.get("flickr")
-    flickr = {"id": "", "url": ""}
-    if data:
-        try:
-            flickr = json.loads(data)
-        except ValueError:
-            # Bad Json?
-            pass
-    return flickr
-
-
-def get_gphotos_data(picture):
-    picture_data = picture.get("gphotos")
-    photo_id, url = "", ""
-    if picture_data:
-        try:
-            picture_data = json.loads(picture_data)
-        except ValueError:
-            # Bad Json?
-            pass
-        else:
-            xml_str = picture_data.get("xml")
-            json_data = picture_data.get("json")
-            if json_data:
-                # Gphotos API (2019)
-                photo_id = json_data["id"]
-                url = json_data["productUrl"]
-            elif xml_str:
-                # For old photos where it returned XML, Picasa API
-                xml = etree.parse(StringIO(xml_str))
-                root = xml.getroot()
-                links = root.findall("{http://www.w3.org/2005/Atom}link")
-                rel = "http://schemas.google.com/photos/2007#canonical"
-                matching = [link.attrib["href"] for link in links if link.attrib["rel"] == rel]
-                id_node = "{http://schemas.google.com/photos/2007}id"
-                photo_ids = root.findall(id_node)
-                photo_id = photo_ids[0].text if photo_ids else ""
-                url = matching[0] if matching else ""
-    return {"url": url, "id": photo_id}
-
-
 @app.route("/", methods=["GET"])
 @login_required
 def index():
@@ -175,9 +92,9 @@ def photo_list():
         page = int(request.args.get("page", "1"))
     except ValueError:
         abort(400)
-    pictures = pictures_for_page(db, page)
+    pictures = web_service.pictures_for_page(db, page, PAGE_SIZE)
     db_total = db.total_pictures()
-    paginator = get_paginator(db_total, PAGE_SIZE, page)
+    paginator = web_service.get_paginator(db_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
     ctx = {
@@ -209,9 +126,9 @@ def picture_detail(key):
         **{
             "picture": picture,
             "tags": tags,
-            "human_size": human_size(picture["size"]),
-            "flickr": get_flickr_data(picture),
-            "gphotos": get_gphotos_data(picture),
+            "human_size": web_service.human_size(picture["size"]),
+            "flickr": web_service.get_flickr_data(picture),
+            "gphotos": web_service.get_gphotos_data(picture),
             "nav": nav,
             "month": "%02d" % picture["month"],
             "day": "%02d" % picture["day"],
@@ -278,17 +195,13 @@ def picture_detail_blob(key):
     )
 
 
-def get_key(url):
-    return url.strip().split("/")[-2]
-
-
 @app.route("/edit/tags/", methods=["GET", "POST"])
 @login_required
 def mass_tag():
     if request.method == "GET":
         return render_template("mass_tag.html")
     else:
-        keys = [get_key(k) for k in request.form["keys"].split()]
+        keys = [web_service.get_key(k) for k in request.form["keys"].split()]
         tags = request.form["tags"]
         new_tags = {base.slugify(t) for t in tags.split(",") if t.strip()}
         if new_tags and keys:
@@ -319,7 +232,7 @@ def edit_dates():
                 url = url.strip()
                 if not url:
                     continue
-                key = get_key(url)
+                key = web_service.get_key(url)
                 date = request.form.get("date_%s" % field_n)
                 if date:
                     date = date.strip()
@@ -328,7 +241,7 @@ def edit_dates():
 
             multikey = request.form.get("multikeys")
             if multikey:
-                keys = [get_key(k) for k in multikey.split()]
+                keys = [web_service.get_key(k) for k in multikey.split()]
                 multikeys_dates = request.form.get("multikeys_dates")
                 if multikeys_dates:
                     dest_date = datetime.strptime(multikeys_dates, "%Y-%m-%d")
@@ -383,9 +296,9 @@ def view_tags(tag_list):
     except ValueError:
         abort(400)
     tags = [t.lower() for t in tag_list.split(",") if t]
-    pictures = pictures_for_page(db, page, tags)
+    pictures = web_service.pictures_for_page(db, page, PAGE_SIZE, tags=tags)
     tagged_total = db.tags.total_for_tags(tags)
-    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    paginator = web_service.get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
     ctx = {
@@ -399,25 +312,13 @@ def view_tags(tag_list):
     return render_template("photo_list.html", **ctx)
 
 
-def months_tags(months, month):
-    return [
-        {"month": "%02d" % m, "has_data": m in months, "current": m == month} for m in range(1, 13)
-    ]
-
-
-def days_tags(days, current):
-    return [
-        {"day": "%02d" % d, "has_data": d in days, "current": d == current} for d in range(1, 32)
-    ]
-
-
 @app.route("/date/<int:year>/")
 @login_required
 def view_year(year):
     page = int(request.args.get("page", "1"))
-    pictures = pictures_for_page(db, page, tags=None, year=year)
+    pictures = web_service.pictures_for_page(db, page, PAGE_SIZE, year=year)
     tagged_total = db.total_for_year(year)
-    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    paginator = web_service.get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
@@ -427,7 +328,7 @@ def view_year(year):
         "paginator": paginator,
         "total": tagged_total,
         "year": year,
-        "months": months_tags(present_months, 0),
+        "months": web_service.months_tags(present_months, 0),
         "years": years,
     }
     return render_template("photo_list.html", **ctx)
@@ -441,7 +342,7 @@ def view_month(year, month):
     offset, limit = (page - 1) * PAGE_SIZE, PAGE_SIZE
     pictures = db.pictures.find(params, limit, offset)
     tagged_total = db.pictures.count(params)
-    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    paginator = web_service.get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
@@ -453,8 +354,8 @@ def view_month(year, month):
         "total": tagged_total,
         "year": year,
         "month": "%02d" % month,
-        "months": months_tags(present_months, month),
-        "days": days_tags(active_days, 0),
+        "months": web_service.months_tags(present_months, month),
+        "days": web_service.days_tags(active_days, 0),
         "years": years,
     }
     return render_template("photo_list.html", **ctx)
@@ -472,7 +373,7 @@ def view_day(year, month, day):
     offset, limit = (page - 1) * PAGE_SIZE, PAGE_SIZE
     pictures = db.pictures.find(params, limit, offset)
     tagged_total = db.pictures.count(params)
-    paginator = get_paginator(tagged_total, PAGE_SIZE, page)
+    paginator = web_service.get_paginator(tagged_total, PAGE_SIZE, page)
     all_tags = db.tags.all()
     years = db.get_years()
     present_months = db.get_months(year)
@@ -488,8 +389,8 @@ def view_day(year, month, day):
         "month": "%02d" % month,
         "day": "%02d" % day,
         "years": years,
-        "months": months_tags(present_months, month),
-        "days": days_tags(active_days, day),
+        "months": web_service.months_tags(present_months, month),
+        "days": web_service.days_tags(active_days, day),
         "tomorrow": tomorrow,
         "yesterday": yesterday,
     }
@@ -513,27 +414,8 @@ def tag_day(year, month, day):
         tags = request.form["tags"]
         new_tags = {base.slugify(t) for t in tags.split(",") if t.strip()}
         if new_tags:
-            tag_day_job(year, month, day, new_tags)
+            web_service.tag_day_job(queue, year, month, day, new_tags)
         return redirect(url_for("view_day", year=year, month=month, day=day))
-
-
-def tag_day_job(year: int, month: int, day: int, tags):
-    queue.append(
-        {
-            "type": "tag-day",
-            "key": uuid.uuid4().hex,
-            "year": year,
-            "month": month,
-            "day": day,
-            "tags": tags,
-            "attempt": 0,
-        }
-    )
-
-
-def serial_job(obj):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
 
 
 @app.route("/jobs/")
@@ -558,7 +440,10 @@ def bad_jobs():
     total_jobs = queue.total_bad_jobs()
     return render_template(
         "bad_jobs.html",
-        bad_jobs=[(job, json.dumps(job, indent=2, default=serial_job)) for job in result],
+        bad_jobs=[
+            (job, json.dumps(job, indent=2, default=web_service.serial_job))
+            for job in result
+        ],
         total_jobs=total_jobs,
     )
 
@@ -607,7 +492,7 @@ def backup():
             as_attachment=True,
             download_name="backup-%s.db" % today,
         )
-    db_size = human_size(os.stat(settings.DB_FILE).st_size)
+    db_size = web_service.human_size(os.stat(settings.DB_FILE).st_size)
     return render_template("backup.html", db_size=db_size)
 
 
