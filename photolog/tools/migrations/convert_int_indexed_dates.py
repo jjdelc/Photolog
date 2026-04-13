@@ -1,11 +1,11 @@
 import os
 from photolog.db import DB
 
-DB_FILE = os.environ['DB_FILE']
+DB_FILE = os.environ["DB_FILE"]
 
 SCRIPT = """
-CREATE TABLE pictures_new (  
-id INTEGER PRIMARY KEY AUTOINCREMENT,  
+CREATE TABLE pictures_new (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT,
   filename TEXT,
   notes TEXT,
@@ -53,7 +53,7 @@ def migrate(conn):
     conn.executescript(SCRIPT)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     db = DB(DB_FILE)
     with db._get_conn() as conn:
         migrate(conn)

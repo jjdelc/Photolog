@@ -10,31 +10,31 @@ from photolog import queue_logger as log, settings_file
 
 
 def daemon(db, settings, queue):
-    log.info('Starting daemon')
+    log.info("Starting daemon")
     daemon_started = True
     while daemon_started:
         job = queue.popleft(100)
         try:
             next_job = prepare_job(job, db, settings).process()
-        except KeyboardInterrupt as inter:
-            log.info('Daemon interrupted')
+        except KeyboardInterrupt:
+            log.info("Daemon interrupted")
             queue.append(job)
             daemon_started = False
-        except SystemExit as inter:
+        except SystemExit:
             # If job was interrupted, don't toss job.
             queue.append(job)
-            log.info('Daemon interrupted')
+            log.info("Daemon interrupted")
             daemon_started = False
-        except Exception as exc:
+        except Exception:
             ex_type, ex, tb = sys.exc_info()
             traceback.print_tb(tb)
-            if job['attempt'] <= settings.MAX_QUEUE_ATTEMPTS:
-                job['attempt'] += 1
+            if job["attempt"] <= settings.MAX_QUEUE_ATTEMPTS:
+                job["attempt"] += 1
                 queue.append(job)
             else:
                 # What should it do? Send a notification, record an error?
                 # Don't lose the task
-                log.info('Adding job %s to bad jobs' % job['key'])
+                log.info("Adding job %s to bad jobs" % job["key"])
                 queue.append_bad(job)
         else:
             if next_job:

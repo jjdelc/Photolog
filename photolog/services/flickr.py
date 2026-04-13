@@ -24,15 +24,22 @@ FLICKR_APP_SECRET = api.flickr_oauth.oauth.client.resource_owner_secret
 """
 
 
-KEY_LOOKUP_USER = 'Photolog'
+KEY_LOOKUP_USER = "Photolog"
 
 
 def build(settings):
-    token = flickrapi.auth.FlickrAccessToken(settings.FLICKR_APP_TOKEN,
-        settings.FLICKR_APP_SECRET, 'write', username=KEY_LOOKUP_USER)
-    api = flickrapi.FlickrAPI(settings.FLICKR_API_KEY,
-        settings.FLICKR_API_SECRET, username=KEY_LOOKUP_USER,
-        token=token)
+    token = flickrapi.auth.FlickrAccessToken(
+        settings.FLICKR_APP_TOKEN,
+        settings.FLICKR_APP_SECRET,
+        "write",
+        username=KEY_LOOKUP_USER,
+    )
+    api = flickrapi.FlickrAPI(
+        settings.FLICKR_API_KEY,
+        settings.FLICKR_API_SECRET,
+        username=KEY_LOOKUP_USER,
+        token=token,
+    )
     return api
 
 
@@ -43,7 +50,7 @@ def upload(settings, title, filename, tags):
     api = build(settings)
     uploaded = api.upload(
         filename=filename,
-        tags=' '.join(tags),
+        tags=" ".join(tags),
         is_public=0,
         is_family=0,
         is_friend=0,
@@ -52,8 +59,8 @@ def upload(settings, title, filename, tags):
     # Understanding the response
     # https://secure.flickr.com/services/api/upload.api.html
     # https://secure.flickr.com/services/api/response.rest.html
-    stat = dict(uploaded.items()).get('stat')
-    if stat != 'ok':
-        raise ValueError('Error uploading photo to Flickr')
-    photo_id = uploaded.find('photoid').text
+    stat = dict(uploaded.items()).get("stat")
+    if stat != "ok":
+        raise ValueError("Error uploading photo to Flickr")
+    photo_id = uploaded.find("photoid").text
     return flickrapi.shorturl.url(photo_id), photo_id

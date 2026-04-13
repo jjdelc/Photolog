@@ -3,11 +3,11 @@ import yaml
 
 
 class Settings(object):
-    PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
+    PROJECT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../.."))
     DEBUG = True
-    DB_FILE = os.path.join(PROJECT_DIR, 'photos.db')
-    UPLOAD_FOLDER = os.path.join(PROJECT_DIR, 'media')
-    THUMBS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbs')
+    DB_FILE = os.path.join(PROJECT_DIR, "photos.db")
+    UPLOAD_FOLDER = os.path.join(PROJECT_DIR, "media")
+    THUMBS_FOLDER = os.path.join(UPLOAD_FOLDER, "thumbs")
     MAX_QUEUE_ATTEMPTS = 3
 
     @classmethod

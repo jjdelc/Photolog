@@ -14,54 +14,46 @@ def upload_thumbs(settings, thumbs, path):
      another object with the s3 urls of those files
     """
     s3_client = boto3.client(
-        's3',
+        "s3",
         aws_access_key_id=settings.S3_ACCESS_KEY,
-        aws_secret_access_key=settings.S3_SECRET_KEY
+        aws_secret_access_key=settings.S3_SECRET_KEY,
     )
     uploaded = {}
     for thumb_name, full_filename in thumbs.items():
         filename = basename(full_filename)
-        key = f'{path}/{filename}'
+        key = f"{path}/{filename}"
 
-        with open(full_filename, 'rb') as f:
-            s3_client.put_object(
-                Bucket=settings.S3_BUCKET,
-                Key=key,
-                Body=f,
-                ACL='public-read'
-            )
+        with open(full_filename, "rb") as f:
+            s3_client.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=f, ACL="public-read")
 
         # Generate public URL
         url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': settings.S3_BUCKET, 'Key': key},
-            ExpiresIn=0
+            "get_object",
+            Params={"Bucket": settings.S3_BUCKET, "Key": key},
+            ExpiresIn=0,
         )
         uploaded[thumb_name] = url
     return uploaded
 
 
-CHUNK_SIZE = int(5e3 * 2 ** 20)
+CHUNK_SIZE = int(5e3 * 2**20)
 
 
 def upload_video(settings, video_full_filename, path):
     s3_client = boto3.client(
-        's3',
+        "s3",
         aws_access_key_id=settings.S3_ACCESS_KEY,
-        aws_secret_access_key=settings.S3_SECRET_KEY
+        aws_secret_access_key=settings.S3_SECRET_KEY,
     )
     video_filename = basename(video_full_filename)
-    key = f'{path}/{video_filename}'
+    key = f"{path}/{video_filename}"
 
     source_size = os.stat(video_full_filename).st_size
     chunks_count = int(math.ceil(source_size / float(CHUNK_SIZE)))
 
     # Initiate multipart upload
-    response = s3_client.create_multipart_upload(
-        Bucket=settings.S3_BUCKET,
-        Key=key
-    )
-    upload_id = response['UploadId']
+    response = s3_client.create_multipart_upload(Bucket=settings.S3_BUCKET, Key=key)
+    upload_id = response["UploadId"]
 
     parts = []
     for i in range(chunks_count):
@@ -71,7 +63,7 @@ def upload_video(settings, video_full_filename, path):
         part_num = i + 1
 
         log.info("Uploading part " + str(part_num) + " of " + str(chunks_count))
-        with open(video_full_filename, 'rb') as fp:
+        with open(video_full_filename, "rb") as fp:
             fp.seek(offset)
             part_data = fp.read(bytes_to_read)
             part_response = s3_client.upload_part(
@@ -79,12 +71,9 @@ def upload_video(settings, video_full_filename, path):
                 Key=key,
                 PartNumber=part_num,
                 UploadId=upload_id,
-                Body=part_data
+                Body=part_data,
             )
-            parts.append({
-                'ETag': part_response['ETag'],
-                'PartNumber': part_num
-            })
+            parts.append({"ETag": part_response["ETag"], "PartNumber": part_num})
             log.info("Done part " + str(part_num) + " of " + str(chunks_count))
 
     # Complete multipart upload
@@ -93,28 +82,20 @@ def upload_video(settings, video_full_filename, path):
             Bucket=settings.S3_BUCKET,
             Key=key,
             UploadId=upload_id,
-            MultipartUpload={'Parts': parts}
+            MultipartUpload={"Parts": parts},
         )
 
         # Set public-read ACL
-        s3_client.put_object_acl(
-            Bucket=settings.S3_BUCKET,
-            Key=key,
-            ACL='public-read'
-        )
+        s3_client.put_object_acl(Bucket=settings.S3_BUCKET, Key=key, ACL="public-read")
         log.info("upload_video done")
     else:
-        s3_client.abort_multipart_upload(
-            Bucket=settings.S3_BUCKET,
-            Key=key,
-            UploadId=upload_id
-        )
+        s3_client.abort_multipart_upload(Bucket=settings.S3_BUCKET, Key=key, UploadId=upload_id)
         log.error("upload_file failed")
 
     # Generate public URL
     url = s3_client.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': settings.S3_BUCKET, 'Key': key},
-        ExpiresIn=0
+        "get_object",
+        Params={"Bucket": settings.S3_BUCKET, "Key": key},
+        ExpiresIn=0,
     )
     return url

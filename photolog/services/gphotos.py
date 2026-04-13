@@ -35,26 +35,26 @@ grant_type=authorization_code
 
 """
 
-SERVICE = 'gphotos'
+SERVICE = "gphotos"
 # https://developers.google.com/api-client-library/python/auth/installed-app
 # This value signals to the Google Authorization Server that the
 # authorization code should be returned in the title bar of the browser,
 OOB_URL = "urn:ietf:wg:oauth:2.0:oob"
-#EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
+# EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
 CODE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 UPLOAD_ENDPOINT = "https://photoslibrary.googleapis.com/v1/uploads"
 ITEM_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate"
 
 AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/auth"
-#EXCHANGE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+# EXCHANGE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 EXCHANGE_TOKEN_ENDPOINT = "https://www.googleapis.com/oauth2/v4/token"
 
 # For Gphotos/Atom XML parsing
-etree.register_namespace('', 'http://www.w3.org/2005/Atom')
-etree.register_namespace('gphoto', 'http://schemas.google.com/photos/2007')
-etree.register_namespace('media', 'http://search.yahoo.com/mrss/')
-etree.register_namespace('app', 'http://www.w3.org/2007/app')
-etree.register_namespace('gd', 'http://schemas.google.com/g/2005')
+etree.register_namespace("", "http://www.w3.org/2005/Atom")
+etree.register_namespace("gphoto", "http://schemas.google.com/photos/2007")
+etree.register_namespace("media", "http://search.yahoo.com/mrss/")
+etree.register_namespace("app", "http://www.w3.org/2007/app")
+etree.register_namespace("gd", "http://schemas.google.com/g/2005")
 
 # https://developers.google.com/photos/library/guides/authentication-authorization
 SCOPE = "https://www.googleapis.com/auth/photoslibrary"
@@ -69,72 +69,76 @@ def get_access_code(client_id):
     https://developers.google.com/identity/protocols/OAuth2WebServer
     """
     params = {
-        'redirect_uri': OOB_URL,
-        'scope': SCOPE,
-        'client_id': client_id,
-        'response_type': 'code',
-        'access_type': 'offline',
+        "redirect_uri": OOB_URL,
+        "scope": SCOPE,
+        "client_id": client_id,
+        "response_type": "code",
+        "access_type": "offline",
     }
-    return urlunparse([
-        'https', GACCOUNT_HOST, GACCOUNT_PATH, '', urlencode(params), ''
-    ])
+    return urlunparse(["https", GACCOUNT_HOST, GACCOUNT_PATH, "", urlencode(params), ""])
 
 
 def exchange_token(tokens, client_id, secret, code):
-    response = requests.post(EXCHANGE_TOKEN_ENDPOINT, data={
-        'code': code,
-        'client_id': client_id,
-        'client_secret': secret,
-        'grant_type': 'authorization_code',
-        'redirect_uri': OOB_URL,
-        'expires_in': '86400'  # 1 day in seconds
-    }).json()
-    if 'access_token' in response:
+    response = requests.post(
+        EXCHANGE_TOKEN_ENDPOINT,
+        data={
+            "code": code,
+            "client_id": client_id,
+            "client_secret": secret,
+            "grant_type": "authorization_code",
+            "redirect_uri": OOB_URL,
+            "expires_in": "86400",  # 1 day in seconds
+        },
+    ).json()
+    if "access_token" in response:
         tokens.save_token(
             SERVICE,
-            response['access_token'],
-            response['token_type'],
-            response['refresh_token'],
-            time() + response['expires_in']
+            response["access_token"],
+            response["token_type"],
+            response["refresh_token"],
+            time() + response["expires_in"],
         )
-        return response['access_token']
+        return response["access_token"]
     else:
         # Some error
-        log.error('Error negotiating %s token: %s' % (SERVICE, response))
-        raise ValueError('Error negotiating %s token: %s' % (SERVICE, response))
+        log.error("Error negotiating %s token: %s" % (SERVICE, response))
+        raise ValueError("Error negotiating %s token: %s" % (SERVICE, response))
 
 
 def refresh_access_token(tokens, client_id, secret, refresh_token):
-    response = requests.post(EXCHANGE_TOKEN_ENDPOINT, data={
-        'refresh_token': refresh_token,
-        'client_id': client_id,
-        'client_secret': secret,
-        'grant_type': 'refresh_token',
-        'access_type': 'offline'
-    }).json()
-    if 'access_token' in response:
+    response = requests.post(
+        EXCHANGE_TOKEN_ENDPOINT,
+        data={
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": secret,
+            "grant_type": "refresh_token",
+            "access_type": "offline",
+        },
+    ).json()
+    if "access_token" in response:
         tokens.update_token(
             SERVICE,
-            response['access_token'],
-            response['token_type'],
-            time() + response['expires_in']
+            response["access_token"],
+            response["token_type"],
+            time() + response["expires_in"],
         )
-        return response['access_token']
+        return response["access_token"]
     else:
         # Some error
-        log.error('Error refreshing %s token: %s' % (SERVICE, response))
-        raise ValueError('Error refreshing %s token: %s' % (SERVICE, response))
+        log.error("Error refreshing %s token: %s" % (SERVICE, response))
+        raise ValueError("Error refreshing %s token: %s" % (SERVICE, response))
 
 
 def _upload_photo(filename, name, access_token, token_type):
     headers = {
-        'Authorization': '%s %s' % (token_type, access_token),
-        'Content-type': 'application/octet-stream',
+        "Authorization": "%s %s" % (token_type, access_token),
+        "Content-type": "application/octet-stream",
         # 'Content-Length': str(os.stat(filename).st_size),
-        'X-Goog-Upload-File-Name': name,
-        'X-Goog-Upload-Protocol': 'raw',
+        "X-Goog-Upload-File-Name": name,
+        "X-Goog-Upload-Protocol": "raw",
     }
-    files = open(filename, 'rb').read()
+    files = open(filename, "rb").read()
     return do_upload(files, headers)
 
 
@@ -144,21 +148,19 @@ def _upload_video(filename, name, access_token, token_type, mime):
       <summary>%(name)s</summary>
       <category scheme="http://schemas.google.com/g/2005#kind"
         term="http://schemas.google.com/photos/2007#photo"/>
-    </entry>""" % {
-        'name': name
-    }
-    metadata = metadata.encode('utf-8')
+    </entry>""" % {"name": name}
+    metadata = metadata.encode("utf-8")
     headers = {
-        'GData-Version': '2',
-        'Slug': name,
-        'Content-Type': 'multipart/related',
-        'Authorization': '%s %s' % (token_type, access_token),
-        'Content-Length': str(os.stat(filename).st_size + len(metadata)),
-        'MIME-version': '1.0'
+        "GData-Version": "2",
+        "Slug": name,
+        "Content-Type": "multipart/related",
+        "Authorization": "%s %s" % (token_type, access_token),
+        "Content-Length": str(os.stat(filename).st_size + len(metadata)),
+        "MIME-version": "1.0",
     }
     files = [
-        (None, (None, metadata, 'application/atom+xml')),
-        (None, (None, open(filename, 'rb'), mime))
+        (None, (None, metadata, "application/atom+xml")),
+        (None, (None, open(filename, "rb"), mime)),
     ]
     return do_upload(files, headers)
 
@@ -186,7 +188,7 @@ def do_upload(files, headers, retry=True):
             log.info("Retrying")
             return do_upload(files, headers, retry=False)
     elif response.status_code > 300:
-        log.error('Failed obtain upload token: %s' % response.text)
+        log.error("Failed obtain upload token: %s" % response.text)
         raise ValueError(response.text)
     upload_token = response.text
 
@@ -194,17 +196,19 @@ def do_upload(files, headers, retry=True):
         "newMediaItems": [
             {
                 "description": "",
-                "simpleMediaItem": {
-                    "uploadToken": upload_token
-                }
+                "simpleMediaItem": {"uploadToken": upload_token},
             }
         ]
     }
     try:
-        item_response = requests.post(ITEM_ENDPOINT, json=new_items, headers={
-            "Authorization": headers["Authorization"],
-            "Content-Type": "application/json"
-        })
+        item_response = requests.post(
+            ITEM_ENDPOINT,
+            json=new_items,
+            headers={
+                "Authorization": headers["Authorization"],
+                "Content-Type": "application/json",
+            },
+        )
     except Exception as err:
         log.exception(err)
         raise
@@ -217,7 +221,7 @@ def do_upload(files, headers, retry=True):
             log.info("Retrying")
             return do_upload(files, headers, retry=False)
     elif item_response.status_code > 300:
-        log.error('Failed to upload: %s' % item_response.text)
+        log.error("Failed to upload: %s" % item_response.text)
         raise ValueError(item_response.text)
 
     new_items_resp = item_response.json()
@@ -227,25 +231,28 @@ def do_upload(files, headers, retry=True):
 def get_token(settings):
     tokens = TokensDB(settings.DB_FILE)
     token = tokens.get_token(SERVICE)
-    token_type = 'Bearer'
+    token_type = "Bearer"
     if token:
-        access_token = token['access_token']
-        token_type = token['token_type']
+        access_token = token["access_token"]
+        token_type = token["token_type"]
         if tokens.needs_refresh(SERVICE, access_token):
-            log.info('Refreshing Gphotos token...')
-            access_token = refresh_access_token(tokens,
+            log.info("Refreshing Gphotos token...")
+            access_token = refresh_access_token(
+                tokens,
                 settings.GPHOTOS_CLIENT_ID,
                 settings.GPHOTOS_SECRET,
-                token['refresh_token']
+                token["refresh_token"],
             )
             log.info("Token refreshed")
     else:
-        log.info('Obtaining Gphotos token')
-        #access_token = gphotos.exchange_token(tokens,
-        access_token = exchange_token(tokens,
+        log.info("Obtaining Gphotos token")
+        # access_token = gphotos.exchange_token(tokens,
+        access_token = exchange_token(
+            tokens,
             settings.GPHOTOS_CLIENT_ID,
             settings.GPHOTOS_SECRET,
-            settings.GPHOTOS_ACCESS_CODE)
+            settings.GPHOTOS_ACCESS_CODE,
+        )
         log.info("Token obtained")
     return access_token, token_type
 
@@ -271,44 +278,45 @@ album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'
     term='http://schemas.google.com/photos/2007#album'></category>
 </entry>"""
 
-link_tag = '{http://www.w3.org/2005/Atom}link'
+link_tag = "{http://www.w3.org/2005/Atom}link"
 
 
 def create_album(album_name, settings):
     access_token, token_type = get_token(settings)
     payload = album_meta % album_name
     headers = {
-        'GData-Version': '2',
-        'Authorization': '%s %s' % (token_type, access_token),
-        'MIME-version': '1.0',
-        'Content-length': str(len(payload.encode('ascii'))),
-        'Content-Type': 'application/atom+xml; charset=UTF-8'
+        "GData-Version": "2",
+        "Authorization": "%s %s" % (token_type, access_token),
+        "MIME-version": "1.0",
+        "Content-length": str(len(payload.encode("ascii"))),
+        "Content-Type": "application/atom+xml; charset=UTF-8",
     }
     session = requests.Session()
-    request = requests.Request('POST', UPLOAD_ENDPOINT,
-        data=payload.encode('ascii'), headers=headers)
+    request = requests.Request(
+        "POST", UPLOAD_ENDPOINT, data=payload.encode("ascii"), headers=headers
+    )
     response = session.send(request.prepare())
     if response.status_code == 201:
         xml = etree.fromstring(response.text)
-        links = [t for t in xml.findall(link_tag) if t.get('rel') == 'self']
+        links = [t for t in xml.findall(link_tag) if t.get("rel") == "self"]
         if links:
-            return links[0].get('href')
-        raise ValueError('Malformed album response')
+            return links[0].get("href")
+        raise ValueError("Malformed album response")
     else:
-        raise ValueError('Failed to create album')
+        raise ValueError("Failed to create album")
 
 
 def delete_album(album_url, settings):
     access_token, token_type = get_token(settings)
     headers = {
-        'GData-Version': '2',
-        'Authorization': '%s %s' % (token_type, access_token),
-        'MIME-version': '1.0',
-        'If-Match': '*'
+        "GData-Version": "2",
+        "Authorization": "%s %s" % (token_type, access_token),
+        "MIME-version": "1.0",
+        "If-Match": "*",
     }
     response = requests.delete(album_url, headers=headers)
     if response.status_code != 200:
-        raise ValueError('Failed to delete album')
+        raise ValueError("Failed to delete album")
 
 
 def clear_album(album_url, settings):
@@ -316,27 +324,34 @@ def clear_album(album_url, settings):
     Removes all photos from an album
     """
     access_token, token_type = get_token(settings)
-    response = requests.get(album_url, headers={
-        'GData-Version': '2',
-        'Authorization': '%s %s' % (token_type, access_token),
-        'MIME-version': '1.0',
-    })
+    response = requests.get(
+        album_url,
+        headers={
+            "GData-Version": "2",
+            "Authorization": "%s %s" % (token_type, access_token),
+            "MIME-version": "1.0",
+        },
+    )
     if response.status_code != 200:
-        raise ValueError('Error reading album')
+        raise ValueError("Error reading album")
     xml = etree.fromstring(response.text)
-    groups = xml.findall('{http://search.yahoo.com/mrss/}group')
+    groups = xml.findall("{http://search.yahoo.com/mrss/}group")
     # There should only be one group... but oh well
     for group in groups:
         while group:  # While it has children, remove it
             group.remove(group[0])
     empty_album = etree.tostring(xml)
-    response = requests.put(album_url, data=empty_album, headers={
-        'GData-Version': '2',
-        'Authorization': '%s %s' % (token_type, access_token),
-        'MIME-version': '1.0',
-        'Content-length': str(len(empty_album)),
-        'Content-Type': 'application/atom+xml; charset=UTF-8',
-        'If-Match': '*'
-    })
+    response = requests.put(
+        album_url,
+        data=empty_album,
+        headers={
+            "GData-Version": "2",
+            "Authorization": "%s %s" % (token_type, access_token),
+            "MIME-version": "1.0",
+            "Content-length": str(len(empty_album)),
+            "Content-Type": "application/atom+xml; charset=UTF-8",
+            "If-Match": "*",
+        },
+    )
     if response.status_code > 300:
-        raise ValueError('Error updating album')
+        raise ValueError("Error updating album")

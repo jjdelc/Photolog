@@ -1,8 +1,10 @@
 # Snippet from: http://flask.pocoo.org/snippets/88/
 
-import os, sqlite3
+import os
+import sqlite3
 from pickle import loads, dumps
 from time import sleep
+
 try:
     from _thread import get_ident
 except ImportError:
@@ -10,37 +12,30 @@ except ImportError:
 
 
 class SqliteQueue(object):
-
-    _create = [(
-            'CREATE TABLE IF NOT EXISTS queue ' 
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  item BLOB'
-            ')'
-            ), (
-            'CREATE TABLE IF NOT EXISTS bad_jobs '
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  item BLOB'
-            ')'
-            )]
-    _count = 'SELECT COUNT(*) count FROM queue'
-    _count_bad = 'SELECT COUNT(*) count FROM bad_jobs'
-    _iterate = 'SELECT id, item FROM queue'
-    _append = 'INSERT INTO queue (item) VALUES (?)'
-    _append_bad = 'INSERT INTO bad_jobs (item) VALUES (?)'
-    _bad_jobs = 'SELECT item FROM bad_jobs ORDER BY id DESC LIMIT ?'
-    _bad_jobs_raw = 'SELECT * FROM bad_jobs'
-    _write_lock = 'BEGIN IMMEDIATE'
-    _popleft_get = (
-            'SELECT id, item FROM queue '
-            'ORDER BY id LIMIT 1'
-            )
-    _popleft_del = 'DELETE FROM queue WHERE id = ?'
-    _peek = 'SELECT item FROM queue ORDER BY id LIMIT ?'
-    _retry = 'INSERT INTO queue(item) SELECT item FROM bad_jobs'
-    _drop_bad = 'DELETE FROM bad_jobs'
-    _purge_bad = 'DELETE from bad_jobs WHERE id=?'
+    _create = [
+        ("CREATE TABLE IF NOT EXISTS queue (  id INTEGER PRIMARY KEY AUTOINCREMENT,  item BLOB)"),
+        (
+            "CREATE TABLE IF NOT EXISTS bad_jobs "
+            "("
+            "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "  item BLOB"
+            ")"
+        ),
+    ]
+    _count = "SELECT COUNT(*) count FROM queue"
+    _count_bad = "SELECT COUNT(*) count FROM bad_jobs"
+    _iterate = "SELECT id, item FROM queue"
+    _append = "INSERT INTO queue (item) VALUES (?)"
+    _append_bad = "INSERT INTO bad_jobs (item) VALUES (?)"
+    _bad_jobs = "SELECT item FROM bad_jobs ORDER BY id DESC LIMIT ?"
+    _bad_jobs_raw = "SELECT * FROM bad_jobs"
+    _write_lock = "BEGIN IMMEDIATE"
+    _popleft_get = "SELECT id, item FROM queue ORDER BY id LIMIT 1"
+    _popleft_del = "DELETE FROM queue WHERE id = ?"
+    _peek = "SELECT item FROM queue ORDER BY id LIMIT ?"
+    _retry = "INSERT INTO queue(item) SELECT item FROM bad_jobs"
+    _drop_bad = "DELETE FROM bad_jobs"
+    _purge_bad = "DELETE from bad_jobs WHERE id=?"
 
     def __init__(self, path):
         self.path = os.path.abspath(path)
@@ -51,8 +46,8 @@ class SqliteQueue(object):
 
     def __len__(self):
         with self._get_conn() as conn:
-            l = conn.execute(self._count).fetchone()[0]
-        return l
+            count = conn.execute(self._count).fetchone()[0]
+        return count
 
     def __iter__(self):
         with self._get_conn() as conn:
@@ -62,8 +57,7 @@ class SqliteQueue(object):
     def _get_conn(self):
         _id = get_ident()
         if _id not in self._connection_cache:
-            self._connection_cache[_id] = sqlite3.Connection(self.path,
-                                                             timeout=60)
+            self._connection_cache[_id] = sqlite3.Connection(self.path, timeout=60)
         return self._connection_cache[_id]
 
     def append(self, obj):
@@ -78,13 +72,14 @@ class SqliteQueue(object):
 
     def get_bad_jobs(self, limit=20):
         with self._get_conn() as conn:
-            return [loads(obj_buffer[0])
-                    for obj_buffer in conn.execute(self._bad_jobs, [limit])]
+            return [loads(obj_buffer[0]) for obj_buffer in conn.execute(self._bad_jobs, [limit])]
 
     def get_bad_jobs_raw(self):
         with self._get_conn() as conn:
-            return [(obj_buffer[0], loads(obj_buffer[1]))
-                    for obj_buffer in conn.execute(self._bad_jobs_raw)]
+            return [
+                (obj_buffer[0], loads(obj_buffer[1]))
+                for obj_buffer in conn.execute(self._bad_jobs_raw)
+            ]
 
     def purge_bad_job(self, item_id):
         with self._get_conn() as conn:
@@ -118,7 +113,7 @@ class SqliteQueue(object):
                         continue
                     tries += 1
                     sleep(wait)
-                    wait = min(max_wait, tries/10 + wait)
+                    wait = min(max_wait, tries / 10 + wait)
             if _id:
                 conn.execute(self._popleft_del, (_id,))
                 return loads(obj_buffer)

@@ -7,18 +7,39 @@ from _thread import get_ident
 
 # Whitelist of allowed field names for dynamic SQL queries
 ALLOWED_PICTURE_FIELDS = {
-    'id', 'name', 'filename', 'notes', 'key', 'checksum', 'original',
-    'thumb', 'medium', 'web', 'large', 'flickr', 'gphotos',
-    'year', 'month', 'day', 'width', 'height', 'size', 'camera',
-    'upload_date', 'format', 'taken_time', 'upload_time', 'exif_read',
-    'date_taken'
+    "id",
+    "name",
+    "filename",
+    "notes",
+    "key",
+    "checksum",
+    "original",
+    "thumb",
+    "medium",
+    "web",
+    "large",
+    "flickr",
+    "gphotos",
+    "year",
+    "month",
+    "day",
+    "width",
+    "height",
+    "size",
+    "camera",
+    "upload_date",
+    "format",
+    "taken_time",
+    "upload_time",
+    "exif_read",
+    "date_taken",
 }
 
 
 def validate_field_name(field):
     """Validate that a field name is in the whitelist."""
     if field not in ALLOWED_PICTURE_FIELDS:
-        raise ValueError(f'Invalid field name: {field}')
+        raise ValueError(f"Invalid field name: {field}")
     return field
 
 
@@ -50,20 +71,24 @@ class BaseDB(object):
 
 
 class TagManager:
-    _tag_picture = 'INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)'
-    _get_tag = 'SELECT id, name FROM tags WHERE name=?'
-    _add_tag = 'INSERT INTO tags (name) VALUES (?)'
-    _clear_picture_tags = 'DELETE FROM tagged_pics WHERE picture_id=?'
-    _pic_tags = ('SELECT name FROM tags WHERE id in '
-                 '(SELECT tag_id from tagged_pics WHERE picture_id = ?)')
-    _get_tags = 'SELECT name FROM tags'
-    _tagged_pics = ('SELECT * from pictures where id in '
-                    '(SELECT picture_id FROM tagged_pics WHERE tag_id = ?)')
-    _get_tags_by_name = 'SELECT id, name FROM tags WHERE name in (?)'
-    _get_tagged_pictures = ('SELECT * FROM pictures WHERE id in '
-                            '(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))'
-                            ' ORDER BY taken_time DESC LIMIT ? OFFSET ?')
-    _total_for_tags = 'SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)'
+    _tag_picture = "INSERT INTO tagged_pics (tag_id, picture_id) VALUES (?, ?)"
+    _get_tag = "SELECT id, name FROM tags WHERE name=?"
+    _add_tag = "INSERT INTO tags (name) VALUES (?)"
+    _clear_picture_tags = "DELETE FROM tagged_pics WHERE picture_id=?"
+    _pic_tags = (
+        "SELECT name FROM tags WHERE id in (SELECT tag_id from tagged_pics WHERE picture_id = ?)"
+    )
+    _get_tags = "SELECT name FROM tags"
+    _tagged_pics = (
+        "SELECT * from pictures where id in (SELECT picture_id FROM tagged_pics WHERE tag_id = ?)"
+    )
+    _get_tags_by_name = "SELECT id, name FROM tags WHERE name in (?)"
+    _get_tagged_pictures = (
+        "SELECT * FROM pictures WHERE id in "
+        "(SELECT picture_id FROM tagged_pics WHERE tag_id in (?))"
+        " ORDER BY taken_time DESC LIMIT ? OFFSET ?"
+    )
+    _total_for_tags = "SELECT COUNT(*) as count FROM tagged_pics WHERE tag_id in (?)"
 
     def __init__(self, db):
         self.db = db
@@ -82,11 +107,11 @@ class TagManager:
 
     def all(self):
         with self.db._get_conn() as conn:
-            return sorted({r['name'] for r in conn.execute(self._get_tags)})
+            return sorted({r["name"] for r in conn.execute(self._get_tags)})
 
     def pictures_for_tag(self, name):
         tag = self.get(name)
-        t_id = tag['id']
+        t_id = tag["id"]
         with self.db._get_conn() as conn:
             return [r for r in conn.execute(self._tagged_pics, [t_id])]
 
@@ -97,7 +122,7 @@ class TagManager:
 
     def for_picture(self, picture_id):
         with self.db._get_conn() as conn:
-            return [t['name'] for t in conn.execute(self._pic_tags, [picture_id])]
+            return [t["name"] for t in conn.execute(self._pic_tags, [picture_id])]
 
     def tag_picture(self, picture_id, tags):
         with self.db._get_conn() as conn:
@@ -106,60 +131,64 @@ class TagManager:
                 if not tag:
                     continue
                 t = self.get(tag)
-                t_id = t['id']
+                t_id = t["id"]
                 conn.execute(self._tag_picture, [t_id, picture_id])
 
     def tagged_pictures(self, tags, limit, offset):
         with self.db._get_conn() as conn:
-            tag_ids = [str(t['id'])
-                       # This usage of IN statement is wrong, look at by_keys()
-                       for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
-            return conn.execute(self._get_tagged_pictures,
-                (', '.join(tag_ids), limit, offset))
+            tag_ids = [
+                str(t["id"])
+                # This usage of IN statement is wrong, look at by_keys()
+                for t in conn.execute(self._get_tags_by_name, [", ".join(tags)])
+            ]
+            return conn.execute(self._get_tagged_pictures, (", ".join(tag_ids), limit, offset))
 
     def total_for_tags(self, tags):
         with self.db._get_conn() as conn:
-            tag_ids = [str(t['id'])
-                       # This usage of IN statement is wrong, look at by_keys()
-                       for t in conn.execute(self._get_tags_by_name, [', '.join(tags)])]
-            return conn.execute(self._total_for_tags, [', '.join(tag_ids)]).fetchone()['count']
+            tag_ids = [
+                str(t["id"])
+                # This usage of IN statement is wrong, look at by_keys()
+                for t in conn.execute(self._get_tags_by_name, [", ".join(tags)])
+            ]
+            return conn.execute(self._total_for_tags, [", ".join(tag_ids)]).fetchone()["count"]
 
 
 class PictureManager:
-    _by_keys = 'SELECT * FROM pictures WHERE key IN (%s)'
-    _change_date = 'UPDATE pictures SET year=?, month=?, day=?, taken_time=?,' \
-                   ' date_taken=? WHERE key =?'
-    _change_attr = 'UPDATE pictures SET %s=? WHERE key=?'
-    _get_recent = 'SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?'
-    _get_pictures = 'SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? ' \
-                    'OFFSET ?'
-    _get_picture = 'SELECT * FROM pictures WHERE key = ?'
-    _find_picture = 'SELECT * FROM pictures WHERE %s'
-    _find_pictures = 'SELECT * FROM pictures WHERE %s ORDER BY taken_time ' \
-                     'DESC'
-    _count_pictures = 'SELECT COUNT(*) count FROM pictures WHERE %s'
-    _update_picture = 'UPDATE pictures SET %s = ? WHERE key = ?'
-    _prev_pic = "SELECT key FROM pictures WHERE taken_time < ? ORDER BY " \
-                "taken_time DESC LIMIT 1"
-    _next_pic = "SELECT key FROM pictures WHERE taken_time > ? ORDER BY " \
-                "taken_time ASC LIMIT 1"
+    _by_keys = "SELECT * FROM pictures WHERE key IN (%s)"
+    _change_date = (
+        "UPDATE pictures SET year=?, month=?, day=?, taken_time=?, date_taken=? WHERE key =?"
+    )
+    _change_attr = "UPDATE pictures SET %s=? WHERE key=?"
+    _get_recent = "SELECT * FROM pictures ORDER BY id DESC LIMIT ? OFFSET ?"
+    _get_pictures = "SELECT * FROM pictures ORDER BY taken_time DESC LIMIT ? OFFSET ?"
+    _get_picture = "SELECT * FROM pictures WHERE key = ?"
+    _find_picture = "SELECT * FROM pictures WHERE %s"
+    _find_pictures = "SELECT * FROM pictures WHERE %s ORDER BY taken_time DESC"
+    _count_pictures = "SELECT COUNT(*) count FROM pictures WHERE %s"
+    _update_picture = "UPDATE pictures SET %s = ? WHERE key = ?"
+    _prev_pic = "SELECT key FROM pictures WHERE taken_time < ? ORDER BY taken_time DESC LIMIT 1"
+    _next_pic = "SELECT key FROM pictures WHERE taken_time > ? ORDER BY taken_time ASC LIMIT 1"
 
     def __init__(self, db):
         self.db = db
 
     def by_keys(self, keys):
         with self.db._get_conn() as conn:
-            return conn.execute(self._by_keys % ','.join('?' * len(keys)),
-                keys)
+            return conn.execute(self._by_keys % ",".join("?" * len(keys)), keys)
 
     def change_date(self, picture_key, date_struct):
         with self.db._get_conn() as conn:
-            conn.execute(self._change_date, [date_struct['year'],
-                                             date_struct['month'],
-                                             date_struct['day'],
-                                             date_struct['taken_time'],
-                                             date_struct['date_taken'],
-                                             picture_key])
+            conn.execute(
+                self._change_date,
+                [
+                    date_struct["year"],
+                    date_struct["month"],
+                    date_struct["day"],
+                    date_struct["taken_time"],
+                    date_struct["date_taken"],
+                    picture_key,
+                ],
+            )
 
     def edit_attribute(self, picture_key, attr, value):
         # Validate field name to prevent SQL injection
@@ -184,7 +213,7 @@ class PictureManager:
             fields, values = zip(*params.items())
             # Validate field names to prevent SQL injection
             validated_fields = [validate_field_name(f) for f in fields]
-            query = self._find_picture % ' AND '.join('%s = ?' % f for f in validated_fields)
+            query = self._find_picture % " AND ".join("%s = ?" % f for f in validated_fields)
             return conn.execute(query, values).fetchone()
 
     def find(self, params, limit=None, offset=None):
@@ -192,15 +221,13 @@ class PictureManager:
             fields, values = zip(*params.items())
             # Validate field names to prevent SQL injection
             validated_fields = [validate_field_name(f) for f in fields]
-            query = self._find_pictures % ' AND '.join(
-                '%s = ?' % f for f in validated_fields
-            )
+            query = self._find_pictures % " AND ".join("%s = ?" % f for f in validated_fields)
             query_params = []
             if limit:
-                query += ' LIMIT ?'
+                query += " LIMIT ?"
                 query_params.append(limit)
             if offset:
-                query += ' OFFSET ?'
+                query += " OFFSET ?"
                 query_params.append(offset)
             return conn.execute(query, list(values) + query_params)
 
@@ -209,10 +236,8 @@ class PictureManager:
             fields, values = zip(*params.items())
             # Validate field names to prevent SQL injection
             validated_fields = [validate_field_name(f) for f in fields]
-            query = self._count_pictures % ' AND '.join(
-                '%s = ?' % f for f in validated_fields
-            )
-            return conn.execute(query, values).fetchone()['count']
+            query = self._count_pictures % " AND ".join("%s = ?" % f for f in validated_fields)
+            return conn.execute(query, values).fetchone()["count"]
 
     def update(self, key, attr, value):
         # Validate field name to prevent SQL injection
@@ -224,63 +249,60 @@ class PictureManager:
         with self.db._get_conn() as conn:
             prev_key = conn.execute(self._prev_pic, [picture_time]).fetchone() or {}
             next_key = conn.execute(self._next_pic, [picture_time]).fetchone() or {}
-        return prev_key.get('key'), next_key.get('key')
+        return prev_key.get("key"), next_key.get("key")
 
 
 class DB(BaseDB):
     _create = (
-            'CREATE TABLE IF NOT EXISTS pictures '
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  name TEXT,'
-            '  filename TEXT,'
-            '  notes TEXT,'
-            '  key TEXT,'
-            '  checksum TEXT,'
-            '  original TEXT,'
-            '  thumb TEXT,'
-            '  medium TEXT,'
-            '  web TEXT,'
-            '  large TEXT,'
-            '  flickr TEXT,'
-            '  gphotos TEXT,'
-            '  year INTEGER,'
-            '  month INTEGER,'
-            '  day INTEGER,'
-            '  width INTEGER,'
-            '  height INTEGER,'
-            '  size INTEGER,'
-            '  camera TEXT,'
-            '  upload_date TEXT,'
-            '  format TEXT,'
-            '  taken_time INTEGER,'
-            '  upload_time INTEGER,'
-            '  exif_read INTEGER,'
-            '  date_taken TEXT'
-            ');',
-            'CREATE TABLE IF NOT EXISTS tags '
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  name TEXT'
-            ');',
-            'CREATE TABLE IF NOT EXISTS tagged_pics '
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  tag_id INTEGER,'
-            '  picture_id INTEGER,'
-            '  FOREIGN KEY(tag_id) REFERENCES tags(id),'
-            '  FOREIGN KEY(picture_id) REFERENCES pictures(id)'
-            ');'
-            )
-    _add_picture = 'INSERT INTO pictures (%(fields)s) VALUES (%(values)s)'
-    _total_pictures = 'SELECT COUNT(*) as count FROM pictures'
-    _get_years = 'SELECT DISTINCT year from pictures ORDER BY year DESC'
-    _get_months = 'SELECT DISTINCT month from pictures WHERE year = ? ORDER BY year DESC'
-    _get_days = 'SELECT DISTINCT day from pictures WHERE year=? AND month=? ORDER BY year DESC'
-    _get_pictures_by_year = ('SELECT * FROM pictures WHERE year = ? ORDER BY '
-                             'taken_time DESC LIMIT ? OFFSET ?')
-    _total_for_year = 'SELECT COUNT(*) count FROM pictures WHERE year = ?'
-    _file_exists = 'SELECT COUNT(*) count FROM pictures WHERE name=? AND checksum=?'
+        "CREATE TABLE IF NOT EXISTS pictures "
+        "("
+        "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "  name TEXT,"
+        "  filename TEXT,"
+        "  notes TEXT,"
+        "  key TEXT,"
+        "  checksum TEXT,"
+        "  original TEXT,"
+        "  thumb TEXT,"
+        "  medium TEXT,"
+        "  web TEXT,"
+        "  large TEXT,"
+        "  flickr TEXT,"
+        "  gphotos TEXT,"
+        "  year INTEGER,"
+        "  month INTEGER,"
+        "  day INTEGER,"
+        "  width INTEGER,"
+        "  height INTEGER,"
+        "  size INTEGER,"
+        "  camera TEXT,"
+        "  upload_date TEXT,"
+        "  format TEXT,"
+        "  taken_time INTEGER,"
+        "  upload_time INTEGER,"
+        "  exif_read INTEGER,"
+        "  date_taken TEXT"
+        ");",
+        "CREATE TABLE IF NOT EXISTS tags (  id INTEGER PRIMARY KEY AUTOINCREMENT,  name TEXT);",
+        "CREATE TABLE IF NOT EXISTS tagged_pics "
+        "("
+        "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "  tag_id INTEGER,"
+        "  picture_id INTEGER,"
+        "  FOREIGN KEY(tag_id) REFERENCES tags(id),"
+        "  FOREIGN KEY(picture_id) REFERENCES pictures(id)"
+        ");",
+    )
+    _add_picture = "INSERT INTO pictures (%(fields)s) VALUES (%(values)s)"
+    _total_pictures = "SELECT COUNT(*) as count FROM pictures"
+    _get_years = "SELECT DISTINCT year from pictures ORDER BY year DESC"
+    _get_months = "SELECT DISTINCT month from pictures WHERE year = ? ORDER BY year DESC"
+    _get_days = "SELECT DISTINCT day from pictures WHERE year=? AND month=? ORDER BY year DESC"
+    _get_pictures_by_year = (
+        "SELECT * FROM pictures WHERE year = ? ORDER BY taken_time DESC LIMIT ? OFFSET ?"
+    )
+    _total_for_year = "SELECT COUNT(*) count FROM pictures WHERE year = ?"
+    _file_exists = "SELECT COUNT(*) count FROM pictures WHERE name=? AND checksum=?"
 
     @property
     def tags(self):
@@ -293,8 +315,8 @@ class DB(BaseDB):
     def add_picture(self, picture_data, tags):
         with self._get_conn() as conn:
             query = self._add_picture % {
-                'fields': ', '.join(picture_data.keys()),
-                'values': ', '.join([':%s' % k for k in picture_data.keys()]),
+                "fields": ", ".join(picture_data.keys()),
+                "values": ", ".join([":%s" % k for k in picture_data.keys()]),
             }
             cur = conn.execute(query, picture_data)
             picture_id = cur.lastrowid
@@ -302,22 +324,22 @@ class DB(BaseDB):
 
     def total_pictures(self):
         with self._get_conn() as conn:
-            return conn.execute(self._total_pictures).fetchone()['count']
+            return conn.execute(self._total_pictures).fetchone()["count"]
 
     def tagged(self, name):
         return self.tags.pictures_for_tag(name)
 
     def get_years(self):
         with self._get_conn() as conn:
-            return [y['year'] for y in conn.execute(self._get_years)]
+            return [y["year"] for y in conn.execute(self._get_years)]
 
     def get_months(self, year):
         with self._get_conn() as conn:
-            return [y['month'] for y in conn.execute(self._get_months, [year])]
+            return [y["month"] for y in conn.execute(self._get_months, [year])]
 
     def get_days(self, year, month):
         with self._get_conn() as conn:
-            return [y['day'] for y in conn.execute(self._get_days, [year, month])]
+            return [y["day"] for y in conn.execute(self._get_days, [year, month])]
 
     def get_pictures_for_year(self, year, limit, offset):
         with self._get_conn() as conn:
@@ -325,46 +347,50 @@ class DB(BaseDB):
 
     def total_for_year(self, year):
         with self._get_conn() as conn:
-            return conn.execute(self._total_for_year, [year]).fetchone()['count']
+            return conn.execute(self._total_for_year, [year]).fetchone()["count"]
 
     def file_exists(self, name, checksum):
         with self._get_conn() as conn:
-            return bool(conn.execute(self._file_exists, [name, checksum]).fetchone()['count'])
+            return bool(conn.execute(self._file_exists, [name, checksum]).fetchone()["count"])
 
 
 class TokensDB(BaseDB):
     EXPIRE_WINDOW = 60 * 30  # Half hour
-    _create = ['CREATE TABLE IF NOT EXISTS tokens '
-            '('
-            '  id INTEGER PRIMARY KEY AUTOINCREMENT,'
-            '  service TEXT,'
-            '  token_type TEXT,'
-            '  access_token TEXT,'
-            '  refresh_token TEXT,'
-            '  expires INTEGER'
-            ');']
-    _save_token = ('INSERT INTO tokens (service, access_token, token_type, '
-                   'refresh_token, expires) VALUES (?,?,?,?,?)')
-    _update_token = ('UPDATE tokens SET access_token=?, token_type=?, '
-                     'expires=? WHERE service=?')
-    _get_token = 'SELECT * FROM tokens WHERE service = ?'
-    _get_expires = 'SELECT expires FROM tokens WHERE service = ? AND access_token = ?'
+    _create = [
+        "CREATE TABLE IF NOT EXISTS tokens "
+        "("
+        "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "  service TEXT,"
+        "  token_type TEXT,"
+        "  access_token TEXT,"
+        "  refresh_token TEXT,"
+        "  expires INTEGER"
+        ");"
+    ]
+    _save_token = (
+        "INSERT INTO tokens (service, access_token, token_type, "
+        "refresh_token, expires) VALUES (?,?,?,?,?)"
+    )
+    _update_token = "UPDATE tokens SET access_token=?, token_type=?, expires=? WHERE service=?"
+    _get_token = "SELECT * FROM tokens WHERE service = ?"
+    _get_expires = "SELECT expires FROM tokens WHERE service = ? AND access_token = ?"
 
     def save_token(self, service, token, token_type, refresh_token, expires):
         with self._get_conn() as conn:
             # TODO: Check if token exists for service and update instead of insert
-            conn.execute(self._save_token, [service, token, token_type,
-                                            refresh_token, expires])
+            conn.execute(
+                self._save_token,
+                [service, token, token_type, refresh_token, expires],
+            )
 
     def update_token(self, service, token, token_type, expires):
         with self._get_conn() as conn:
-            conn.execute(self._update_token, [token, token_type, expires,
-                                              service])
+            conn.execute(self._update_token, [token, token_type, expires, service])
 
     def needs_refresh(self, service, token):
         with self._get_conn() as conn:
             response = conn.execute(self._get_expires, [service, token]).fetchone()
-            expires = response['expires']
+            expires = response["expires"]
             return (time() + self.EXPIRE_WINDOW) > expires
 
     def get_token(self, service):
