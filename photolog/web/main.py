@@ -499,25 +499,25 @@ def view_day(year, month, day):
 @app.route("/date/<int:year>/<int:month>/<int:day>/tags/", methods=["GET", "POST"])
 @login_required
 def tag_day(year, month, day):
-    month = "%02d" % month
-    day = "%02d" % day
-    year = str(year)
+    month_str = "%02d" % month
+    day_str = "%02d" % day
+    year_str = str(year)
     params = {"year": year, "month": month, "day": day}
     total = db.pictures.count(params)
     if request.method == "GET":
         return render_template(
             "edit_day_tags.html",
-            **{"total": total, "year": year, "month": month, "day": day},
+            **{"total": total, "year": year_str, "month": month_str, "day": day_str},
         )
     else:
         tags = request.form["tags"]
         new_tags = {base.slugify(t) for t in tags.split(",") if t.strip()}
         if new_tags:
             tag_day_job(year, month, day, new_tags)
-        return redirect(url_for("view_day", year=int(year), month=int(month), day=int(day)))
+        return redirect(url_for("view_day", year=year, month=month, day=day))
 
 
-def tag_day_job(year, month, day, tags):
+def tag_day_job(year: int, month: int, day: int, tags):
     queue.append(
         {
             "type": "tag-day",

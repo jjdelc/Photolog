@@ -1,8 +1,7 @@
 """Tests for tagging routes: tag picture, tag day, mass tag, view by tags"""
 
 import pytest
-from datetime import datetime
-from photolog.web.main import db
+from photolog.web.main import db, queue
 
 
 class TestTagPictureRoute:
@@ -41,6 +40,12 @@ class TestTagPictureRoute:
         # Should redirect to picture detail
         assert response.status_code == 302
         assert f"/photo/{sample_picture['key']}/" in response.location
+
+        # Verify tags were applied
+        pic = db.pictures.by_key(sample_picture["key"])
+        tags = db.tags.for_picture(pic["id"])
+        assert "newtag1" in tags
+        assert "newtag2" in tags
 
     def test_tag_picture_replaces_existing_tags(self, authenticated_client, sample_picture):
         """POST replaces existing tags instead of adding"""
@@ -104,10 +109,7 @@ class TestTagDayRoute:
         assert "1" in data or "total" in data.lower()
 
     def test_tag_day_post_tags_all_pictures(self, authenticated_client, multiple_pictures):
-        """POST tags all pictures on that day"""
-        # Filter for pictures on 2023-06-01
-        target_date = datetime(2023, 6, 1)
-
+        """POST enqueues a tag-day job with correct parameters"""
         response = authenticated_client.post(
             "/date/2023/6/1/tags/",
             data={"tags": "day-tag"},
@@ -118,19 +120,14 @@ class TestTagDayRoute:
         assert response.status_code == 302
         assert "/date/2023/6/1/" in response.location
 
-        # Verify the picture on target date has the tag applied
-        pic_on_target_date = db.pictures.by_key("test-key-000")
-        assert pic_on_target_date is not None
-        assert pic_on_target_date["year"] == target_date.year
-        assert pic_on_target_date["month"] == target_date.month
-        assert pic_on_target_date["day"] == target_date.day
-        tags_for_pic = db.tags.for_picture(pic_on_target_date["id"])
-        assert "day-tag" in tags_for_pic
-
-        # Verify a picture on a different date doesn't have the tag
-        pic_on_other_date = db.pictures.by_key("test-key-001")
-        tags_for_other_pic = db.tags.for_picture(pic_on_other_date["id"])
-        assert "day-tag" not in tags_for_other_pic
+        # Verify the job was enqueued with correct parameters
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is not None
+        assert job_data["type"] == "tag-day"
+        assert job_data["year"] == 2023
+        assert job_data["month"] == 6
+        assert job_data["day"] == 1
+        assert "day-tag" in job_data["tags"]
 
     def test_tag_day_empty_tags_no_op(self, authenticated_client, multiple_pictures):
         """POST with empty tags does not queue job"""
@@ -140,6 +137,10 @@ class TestTagDayRoute:
 
         # Should still redirect but not queue anything
         assert response.status_code == 302
+
+        # Verify no job was enqueued
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is None
 
     def test_tag_day_invalid_date(self, authenticated_client):
         """Invalid date parameters handled"""
@@ -163,7 +164,7 @@ class TestMassTagRoute:
         assert b"tag" in response.data.lower()
 
     def test_mass_tag_post_valid_urls(self, authenticated_client, multiple_pictures):
-        """POST with valid picture URLs tags them"""
+        """POST with valid picture URLs enqueues mass-tag job"""
         urls = "\n".join(
             [f"http://example.com/photo/{pic['key']}/" for pic in multiple_pictures[:3]]
         )
@@ -177,6 +178,16 @@ class TestMassTagRoute:
         # Should redirect to index
         assert response.status_code == 302
         assert "/" in response.location
+
+        # Verify the job was enqueued with correct parameters
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is not None
+        assert job_data["type"] == "mass-tag"
+        assert len(job_data["keys"]) == 3
+        assert job_data["keys"][0] == multiple_pictures[0]["key"]
+        assert job_data["keys"][1] == multiple_pictures[1]["key"]
+        assert job_data["keys"][2] == multiple_pictures[2]["key"]
+        assert "batch-tag" in job_data["tags"]
 
     def test_mass_tag_post_empty_tags_no_op(self, authenticated_client, multiple_pictures):
         """POST with empty tags doesn't queue"""
@@ -193,6 +204,10 @@ class TestMassTagRoute:
         # Should still redirect but not queue
         assert response.status_code == 302
 
+        # Verify no job was enqueued
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is None
+
     def test_mass_tag_post_empty_urls_no_op(self, authenticated_client):
         """POST with empty URLs doesn't queue"""
         response = authenticated_client.post(
@@ -203,6 +218,10 @@ class TestMassTagRoute:
 
         # Should redirect but not queue
         assert response.status_code == 302
+
+        # Verify no job was enqueued
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is None
 
     def test_mass_tag_extracts_key_from_url(self, authenticated_client, multiple_pictures):
         """URL parsing extracts key correctly"""
@@ -216,6 +235,13 @@ class TestMassTagRoute:
         )
 
         assert response.status_code == 200
+
+        # Verify the key was extracted and job was enqueued
+        job_data = queue.popleft(sleep_wait=False)
+        assert job_data is not None
+        assert job_data["type"] == "mass-tag"
+        assert multiple_pictures[0]["key"] in job_data["keys"]
+        assert "extracted-tag" in job_data["tags"]
 
 
 class TestViewByTagsRoute:
