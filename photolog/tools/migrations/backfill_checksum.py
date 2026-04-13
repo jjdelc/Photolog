@@ -9,7 +9,7 @@ other environments.
 import os
 from os.path import join
 from photolog.db import DB
-from photolog.services.base import file_checksum
+from photolog.services.api.base import file_checksum
 
 
 BASE_PATH = os.environ["BASE_PATH"]

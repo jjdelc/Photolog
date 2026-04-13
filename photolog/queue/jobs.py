@@ -1,7 +1,8 @@
 import os
 import json
 from time import mktime
-from photolog.services import s3, gphotos, flickr, base
+from photolog.services import s3, gphotos, flickr
+from photolog.services.api import base
 from photolog import queue_logger as log, RAW_FILES, IMAGE_FILES, VIDEO_FILES
 
 

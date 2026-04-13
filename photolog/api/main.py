@@ -5,8 +5,8 @@ from photolog.db import DB
 from photolog.squeue import SqliteQueue
 from photolog.settings import Settings
 from photolog import api_logger as log, settings_file, ALLOWED_FILES
-from photolog.services.base import start_batch, end_batch, slugify
-from photolog.services.main import allowed_file, queue_file, valid_secret
+from photolog.services.api.base import start_batch, end_batch, slugify
+from photolog.services.api.main import allowed_file, queue_file, valid_secret
 
 settings = Settings.load(settings_file)
 queue = SqliteQueue(settings.DB_FILE)

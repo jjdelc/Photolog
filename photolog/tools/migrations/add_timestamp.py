@@ -1,7 +1,7 @@
 from photolog.db import DB
 from photolog import settings_file
 from photolog.settings import Settings
-from photolog.services.base import taken_timestamp
+from photolog.services.api.base import taken_timestamp
 
 
 def migrate(db, settings):

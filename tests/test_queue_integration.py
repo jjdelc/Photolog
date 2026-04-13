@@ -90,14 +90,14 @@ def test_image_job_full_pipeline():
     job_data = _make_upload_job("imgkey001", "photo.jpg")
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch(
-            "photolog.services.base.generate_thumbnails",
+            "photolog.services.api.base.generate_thumbnails",
             return_value=FAKE_THUMBS,
         ),
         patch("photolog.services.s3.upload_thumbs", return_value=FAKE_S3_URLS),
-        patch("photolog.services.base.file_checksum", return_value="deadbeef"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="deadbeef"),
+        patch("photolog.services.api.base.delete_file"),
         patch(
             "photolog.services.flickr.upload",
             return_value=("https://flickr.com/photo/42", "42"),
@@ -125,14 +125,14 @@ def test_image_job_skips_flickr_when_disabled():
     job_data = _make_upload_job("imgkey002", "photo2.jpg")
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch(
-            "photolog.services.base.generate_thumbnails",
+            "photolog.services.api.base.generate_thumbnails",
             return_value=FAKE_THUMBS,
         ),
         patch("photolog.services.s3.upload_thumbs", return_value=FAKE_S3_URLS),
-        patch("photolog.services.base.file_checksum", return_value="abc"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="abc"),
+        patch("photolog.services.api.base.delete_file"),
         patch("photolog.services.flickr.upload") as mock_flickr,
         patch("photolog.services.gphotos.upload_photo", return_value={}),
     ):
@@ -149,14 +149,14 @@ def test_image_job_skip_field_bypasses_step():
     job_data["skip"] = ["flickr", "gphotos"]
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch(
-            "photolog.services.base.generate_thumbnails",
+            "photolog.services.api.base.generate_thumbnails",
             return_value=FAKE_THUMBS,
         ),
         patch("photolog.services.s3.upload_thumbs", return_value=FAKE_S3_URLS),
-        patch("photolog.services.base.file_checksum", return_value="abc"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="abc"),
+        patch("photolog.services.api.base.delete_file"),
         patch("photolog.services.flickr.upload") as mock_flickr,
         patch("photolog.services.gphotos.upload_photo") as mock_gphotos,
     ):
@@ -179,18 +179,18 @@ def test_video_job_full_pipeline():
 
     with (
         patch(
-            "photolog.services.base.get_video_thumbnail",
+            "photolog.services.api.base.get_video_thumbnail",
             return_value=(FAKE_THUMBS, "/tmp/fake_caps/"),
         ),
-        patch("photolog.services.base.video_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.video_exif", return_value=FAKE_EXIF),
         patch("photolog.services.s3.upload_thumbs", return_value=FAKE_S3_URLS),
         patch(
             "photolog.services.s3.upload_video",
             return_value="https://s3.example.com/clip.mp4",
         ),
-        patch("photolog.services.base.file_checksum", return_value="vidcsum"),
-        patch("photolog.services.base.delete_file"),
-        patch("photolog.services.base.delete_dir"),
+        patch("photolog.services.api.base.file_checksum", return_value="vidcsum"),
+        patch("photolog.services.api.base.delete_file"),
+        patch("photolog.services.api.base.delete_dir"),
         patch(
             "photolog.services.gphotos.upload_video",
             return_value={"xml": "<feed/>"},
@@ -216,10 +216,10 @@ def test_raw_file_job_full_pipeline():
     raw_s3_urls = {"original": "https://s3.example.com/shot.arw"}
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch("photolog.services.s3.upload_thumbs", return_value=raw_s3_urls),
-        patch("photolog.services.base.file_checksum", return_value="rawcsum"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="rawcsum"),
+        patch("photolog.services.api.base.delete_file"),
     ):
         _run_to_completion(job_data, db, settings)
 
@@ -252,10 +252,10 @@ def test_raw_file_job_copies_thumbs_from_sister_jpeg():
     raw_s3_urls = {"original": "https://s3.example.com/shot.arw"}
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch("photolog.services.s3.upload_thumbs", return_value=raw_s3_urls),
-        patch("photolog.services.base.file_checksum", return_value="rawcsum2"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="rawcsum2"),
+        patch("photolog.services.api.base.delete_file"),
     ):
         _run_to_completion(job_data, db, settings)
 
@@ -360,14 +360,14 @@ def test_successful_job_does_not_land_in_bad_jobs():
     queue.append(job_data)
 
     with (
-        patch("photolog.services.base.read_exif", return_value=FAKE_EXIF),
+        patch("photolog.services.api.base.read_exif", return_value=FAKE_EXIF),
         patch(
-            "photolog.services.base.generate_thumbnails",
+            "photolog.services.api.base.generate_thumbnails",
             return_value=FAKE_THUMBS,
         ),
         patch("photolog.services.s3.upload_thumbs", return_value=FAKE_S3_URLS),
-        patch("photolog.services.base.file_checksum", return_value="ok"),
-        patch("photolog.services.base.delete_file"),
+        patch("photolog.services.api.base.file_checksum", return_value="ok"),
+        patch("photolog.services.api.base.delete_file"),
         patch("photolog.services.flickr.upload", return_value=("url", "1")),
         patch("photolog.services.gphotos.upload_photo", return_value={}),
     ):

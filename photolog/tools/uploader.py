@@ -5,7 +5,7 @@ import argparse
 from time import time
 from hashlib import md5
 from urllib.parse import urljoin
-from photolog.services.base import file_checksum
+from photolog.services.api.base import file_checksum
 from photolog import (
     cli_logger as log,
     ALLOWED_FILES,

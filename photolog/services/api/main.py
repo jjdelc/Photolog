@@ -6,7 +6,7 @@ from datetime import datetime
 
 from werkzeug.utils import secure_filename
 
-from photolog.services.base import random_string
+from photolog.services.api.base import random_string
 
 
 # Expected MIME types for file extensions

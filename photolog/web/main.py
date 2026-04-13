@@ -29,7 +29,7 @@ from photolog import web_logger as log, settings_file
 from photolog.db import DB
 from photolog.settings import Settings
 from photolog.squeue import SqliteQueue
-from photolog.services import base
+from photolog.services.api import base
 
 INDIEAUTH_ENDPOINT = "https://indieauth.com/auth"
 # INDIEAUTH_ENDPOINT = 'https://indielogin.com/auth'

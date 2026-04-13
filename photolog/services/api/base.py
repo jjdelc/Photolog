@@ -15,8 +15,8 @@ from PIL import Image, ExifTags, ImageFile
 from urllib.parse import urlparse, urljoin
 from os.path import splitext, basename, join
 
-from . import VIDEO_PLACEHOLDER
-from .gphotos import create_album, clear_album
+from .. import VIDEO_PLACEHOLDER
+from ..gphotos import create_album, clear_album
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
