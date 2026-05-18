@@ -29,7 +29,8 @@ def read_local_conf(conf_file=None):
         home = os.path.expanduser("~")
         conf_file = os.path.join(home, ".photolog")
     log.info("Reading config file: %s" % conf_file)
-    conf = yaml.load(open(conf_file))
+    with open(conf_file) as fh:
+        conf = yaml.safe_load(fh)
     return conf
 
 
@@ -60,10 +61,10 @@ def validate_file(filename):
 def find_metadata_file(full_filename):
     """
     Looks for a .THM file on the same directory as the video file
-    :param filename:
+    :param full_filename:
     :return:
     """
-    filename = os.path.basename(full_filename)
+    filename: str = os.path.basename(full_filename)
     name, ext = os.path.splitext(filename)
     if ext.lstrip(".").lower() not in VIDEO_FILES:
         return False
@@ -219,7 +220,7 @@ def run():
         metavar="T",
         nargs="?",
         type=str,
-        help="Tags for this batch",
+        help="Text file with list of local file paths to upload",
     )
     parser.add_argument("--tags", metavar="T", nargs="?", type=str, help="Tags for this batch")
     parser.add_argument("--host", metavar="H", nargs="?", type=str, help="Host to upload")

@@ -26,12 +26,7 @@ def upload_thumbs(settings, thumbs, path):
         with open(full_filename, "rb") as f:
             s3_client.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=f, ACL="public-read")
 
-        # Generate public URL
-        url = s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": settings.S3_BUCKET, "Key": key},
-            ExpiresIn=0,
-        )
+        url = f"https://{settings.S3_BUCKET}.s3.amazonaws.com/{key}"
         uploaded[thumb_name] = url
     return uploaded
 
@@ -92,10 +87,5 @@ def upload_video(settings, video_full_filename, path):
         s3_client.abort_multipart_upload(Bucket=settings.S3_BUCKET, Key=key, UploadId=upload_id)
         log.error("upload_file failed")
 
-    # Generate public URL
-    url = s3_client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": settings.S3_BUCKET, "Key": key},
-        ExpiresIn=0,
-    )
+    url = f"https://{settings.S3_BUCKET}.s3.amazonaws.com/{key}"
     return url
