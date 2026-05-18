@@ -30,8 +30,9 @@ def migrate(conn):
     total_updated = 0
     total_entries = 0
 
-    for picture in conn.execute("SELECT id FROM pictures"):
+    for picture in conn.execute("SELECT id, key FROM pictures"):
         pic_id = picture["id"]
+        pic_key = picture["key"]
         total_entries += 1
 
         updated_fields = {}
@@ -47,10 +48,11 @@ def migrate(conn):
                 if cleaned_url != current_url:
                     updated_fields[field] = cleaned_url
                     needs_update = True
-                    print(f"  {field}: {current_url[:80]}... -> {cleaned_url}")
+                    print(f"  [{pic_key}] {field}: {current_url[:80]}... -> {cleaned_url}")
 
         if needs_update:
             total_updated += 1
+            print(f"✓ Updated [{pic_key}]")
             for field, cleaned_url in updated_fields.items():
                 conn.execute(
                     f"UPDATE pictures SET {field} = ? WHERE id=?",
