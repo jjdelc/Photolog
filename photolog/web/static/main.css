@@ -268,3 +268,17 @@ color: #AAAAAA;
 font-size: 0.8rem;
 color: #888888;
 }
+.jobs {
+    margin: auto;
+    background: white;
+    border: 1px solid #444;
+}
+.jobs thead {
+    border-bottom: 1px solid #444;
+}
+.jobs td {
+    padding: 0.5em;
+}
+.jobs .attempts {
+    text-align: right;
+}
