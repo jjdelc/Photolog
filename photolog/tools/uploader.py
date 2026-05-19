@@ -17,6 +17,29 @@ from photolog import (
 BATCH_SIZE = 1999  # Max Gphotos album is 2000
 UPLOAD_ATTEMPTS = 3
 
+MIME_TYPES = {
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "gif": "image/gif",
+    "arw": "image/x-sony-arw",
+    "raw": "image/x-raw",
+    "mp4": "video/mp4",
+    "avi": "video/x-msvideo",
+    "ogv": "video/ogg",
+    "mpg": "video/mpeg",
+    "mpeg": "video/mpeg",
+    "mkv": "video/x-matroska",
+}
+
+
+def get_mime_type(filename):
+    """Get MIME type from filename extension."""
+    if "." not in filename:
+        return "application/octet-stream"
+    ext = filename.rsplit(".", 1)[1].lower()
+    return MIME_TYPES.get(ext, "application/octet-stream")
+
 
 def chunks(items, n):
     """Yield successive n-sized chunks from items."""
@@ -41,7 +64,15 @@ def start_batch(endpoint, secret):
     return batch_id
 
 
-def verify_exists(host, full_filepath, secret):
+def verify_exists(host, full_filepath, secret) -> bool:
+    """
+    If this returns True means the file has already been uploaded.
+    We do this by the API call. It will return 204 if it exists, otherwise 404
+    :param host: Host of the API endpoint
+    :param full_filepath: File to check
+    :param secret: API secret
+    :return: bool
+    """
     verification = urljoin(host, "/photos/verify/")
     checksum = file_checksum(full_filepath)
     filename = os.path.basename(full_filepath)
@@ -109,21 +140,36 @@ def handle_file(host, full_file, secret, tags, skip, halt, target_date):
                         # 'batch_id': None,
                         # 'is_last': False,  # n == total_files
                     }
+                    photo_fh = open(full_file, "rb")
+                    metadata_fh = None
                     files = {
-                        "photo_file": open(full_file, "rb"),
+                        "photo_file": (
+                            os.path.basename(full_file),
+                            photo_fh,
+                            get_mime_type(full_file),
+                        )
                     }
                     if target_date:
                         post_data["target_date"] = target_date
                     else:
                         metadata_file = find_metadata_file(full_file)
                         if metadata_file:
-                            files["metadata_file"] = open(metadata_file, "rb")
+                            metadata_fh = open(metadata_file, "rb")
+                            files["metadata_file"] = (
+                                os.path.basename(metadata_file),
+                                metadata_fh,
+                                get_mime_type(metadata_file),
+                            )
+
                     response = requests.post(
                         endpoint,
                         data=post_data,
                         files=files,
                         headers={"X-PHOTOLOG-SECRET": secret},
                     )
+                    photo_fh.close()
+                    if metadata_fh:
+                        metadata_fh.close()
                     return response.status_code == 201
             except requests.ConnectionError:
                 attempt += 1
