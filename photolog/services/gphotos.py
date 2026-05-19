@@ -1,108 +1,21 @@
 import os
 from time import time, sleep
 import xml.etree.ElementTree as etree
-from urllib.parse import urlencode, urlunparse
 
 import requests
 from photolog.db import TokensDB
 from photolog import queue_logger as log
 
-"""
-To obtain a bearer token you must:
-Go to google developer console and create a new project
-Grant "New Credentials" for an "Oauth client ID"
-*important*
-    The redirect_uri has to be "urn:ietf:wg:oauth:2.0:oob"
-    scope has to point to https://www.googleapis.com/auth/photoslibrary.appendonly
-
-Construct the following URL and paste into browser:
-https://accounts.google.com/o/oauth2/v2/auth?
-    scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary&
-    redirect_uri=urn:ietf:wg:oauth:2.0:oob&
-    response_type=code&
-    access_type=offline&
-    client_id={{YOUR_CLIENT_ID}}
-
-Copy the provided code as the GPHOTOS_ACCESS_CODE setting.
-
-https://www.googleapis.com/oauth2/v4/token
-
-code=YOUR_CODE
-client_id=YOUR_CLIENT&
-client_secret=your_client_secret&
-redirect_uri=https://oauth2-login-demo.appspot.com/code&
-grant_type=authorization_code
-
-"""
-
 SERVICE = "gphotos"
-# https://developers.google.com/api-client-library/python/auth/installed-app
-# This value signals to the Google Authorization Server that the
-# authorization code should be returned in the title bar of the browser,
-OOB_URL = "urn:ietf:wg:oauth:2.0:oob"
-# EXCHANGE_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v4/token'
-CODE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 UPLOAD_ENDPOINT = "https://photoslibrary.googleapis.com/v1/uploads"
 ITEM_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate"
-
-AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/auth"
-# EXCHANGE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 EXCHANGE_TOKEN_ENDPOINT = "https://www.googleapis.com/oauth2/v4/token"
 
-# For Gphotos/Atom XML parsing
 etree.register_namespace("", "http://www.w3.org/2005/Atom")
 etree.register_namespace("gphoto", "http://schemas.google.com/photos/2007")
 etree.register_namespace("media", "http://search.yahoo.com/mrss/")
 etree.register_namespace("app", "http://www.w3.org/2007/app")
 etree.register_namespace("gd", "http://schemas.google.com/g/2005")
-
-# https://developers.google.com/photos/library/guides/authentication-authorization
-SCOPE = "https://www.googleapis.com/auth/photoslibrary"
-GACCOUNT_HOST = "accounts.google.com"
-GACCOUNT_PATH = "/o/oauth2/v2/auth"
-
-
-def get_access_code(client_id):
-    """
-    Use this function to discover the URL you need to visit to get your
-     one off code to exchange for an access token.
-    https://developers.google.com/identity/protocols/OAuth2WebServer
-    """
-    params = {
-        "redirect_uri": OOB_URL,
-        "scope": SCOPE,
-        "client_id": client_id,
-        "response_type": "code",
-        "access_type": "offline",
-    }
-    return urlunparse(["https", GACCOUNT_HOST, GACCOUNT_PATH, "", urlencode(params), ""])
-
-
-def exchange_token(tokens, client_id, secret, code):
-    response = requests.post(
-        EXCHANGE_TOKEN_ENDPOINT,
-        data={
-            "code": code,
-            "client_id": client_id,
-            "client_secret": secret,
-            "grant_type": "authorization_code",
-            "redirect_uri": OOB_URL,
-            "expires_in": "86400",  # 1 day in seconds
-        },
-    ).json()
-    if "access_token" in response:
-        tokens.save_token(
-            SERVICE,
-            response["access_token"],
-            response["token_type"],
-            response["refresh_token"],
-            time() + response["expires_in"],
-        )
-        return response["access_token"]
-    else:
-        # Some error
-        log.error("Error negotiating %s token: %s" % (SERVICE, response))
-        raise ValueError("Error negotiating %s token: %s" % (SERVICE, response))
 
 
 def refresh_access_token(tokens, client_id, secret, refresh_token):
@@ -229,31 +142,23 @@ def do_upload(files, headers, retry=True):
 
 
 def get_token(settings):
+    if not hasattr(settings, 'GPHOTOS_REFRESH_TOKEN') or not settings.GPHOTOS_REFRESH_TOKEN:
+        raise ValueError("GPHOTOS_REFRESH_TOKEN not configured")
+
     tokens = TokensDB(settings.DB_FILE)
     token = tokens.get_token(SERVICE)
     token_type = "Bearer"
-    if token:
-        access_token = token["access_token"]
-        token_type = token["token_type"]
-        if tokens.needs_refresh(SERVICE, access_token):
-            log.info("Refreshing Gphotos token...")
-            access_token = refresh_access_token(
-                tokens,
-                settings.GPHOTOS_CLIENT_ID,
-                settings.GPHOTOS_SECRET,
-                token["refresh_token"],
-            )
-            log.info("Token refreshed")
-    else:
-        log.info("Obtaining Gphotos token")
-        # access_token = gphotos.exchange_token(tokens,
-        access_token = exchange_token(
-            tokens,
-            settings.GPHOTOS_CLIENT_ID,
-            settings.GPHOTOS_SECRET,
-            settings.GPHOTOS_ACCESS_CODE,
-        )
-        log.info("Token obtained")
+    if token and not tokens.needs_refresh(SERVICE, token["access_token"]):
+        return token["access_token"], token_type
+
+    log.info("Refreshing Gphotos token...")
+    access_token = refresh_access_token(
+        tokens,
+        settings.GPHOTOS_CLIENT_ID,
+        settings.GPHOTOS_SECRET,
+        settings.GPHOTOS_REFRESH_TOKEN,
+    )
+    log.info("Token refreshed")
     return access_token, token_type
 
 
