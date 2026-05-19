@@ -51,7 +51,8 @@ def _upload_photo(filename, name, access_token, token_type):
         "X-Goog-Upload-File-Name": name,
         "X-Goog-Upload-Protocol": "raw",
     }
-    files = open(filename, "rb").read()
+    with open(filename, "rb") as fh:
+        files = fh.read()
     return do_upload(files, headers)
 
 
