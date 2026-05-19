@@ -54,10 +54,7 @@ def migrate(conn):
             total_updated += 1
             print(f"✓ Updated [{pic_key}]")
             for field, cleaned_url in updated_fields.items():
-                conn.execute(
-                    f"UPDATE pictures SET {field} = ? WHERE id=?",
-                    [cleaned_url, pic_id]
-                )
+                conn.execute(f"UPDATE pictures SET {field} = ? WHERE id=?", [cleaned_url, pic_id])
 
     print(f"\nMigration complete!")
     print(f"Total entries processed: {total_entries}")

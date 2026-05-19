@@ -441,8 +441,7 @@ def bad_jobs():
     return render_template(
         "bad_jobs.html",
         bad_jobs=[
-            (job, json.dumps(job, indent=2, default=web_service.serial_job))
-            for job in result
+            (job, json.dumps(job, indent=2, default=web_service.serial_job)) for job in result
         ],
         total_jobs=total_jobs,
     )

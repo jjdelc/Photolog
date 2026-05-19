@@ -143,7 +143,7 @@ def do_upload(files, headers, retry=True):
 
 
 def get_token(settings):
-    if not hasattr(settings, 'GPHOTOS_REFRESH_TOKEN') or not settings.GPHOTOS_REFRESH_TOKEN:
+    if not hasattr(settings, "GPHOTOS_REFRESH_TOKEN") or not settings.GPHOTOS_REFRESH_TOKEN:
         raise ValueError("GPHOTOS_REFRESH_TOKEN not configured")
 
     tokens = TokensDB(settings.DB_FILE)
