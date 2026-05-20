@@ -139,8 +139,9 @@ class ImageJob(BaseUploadJob):
         batch_id = self.data["batch_id"]
         if batch_id:
             base.batch_2_album(batch_id, self.settings, section="feed")
+        s3_original_url = self.data["data"]["s3_urls"].get("original")
         gphotos_data = gphotos.upload_photo(
-            self.settings, self.full_filepath, self.filename, self.db, self.key
+            self.settings, self.full_filepath, self.filename, s3_original_url
         )
         self.db.pictures.update(self.key, "gphotos", json.dumps({"json": gphotos_data}))
         log.info("Uploaded %s to Gphotos" % self.key)
@@ -224,8 +225,9 @@ class VideoJob(BaseUploadJob):
 
     def gphotos_upload(self):
         mime = self.data["data"]["exif"]["mime"]
+        s3_original_url = self.data["data"]["s3_urls"].get("original")
         gphotos_data = gphotos.upload_video(
-            self.settings, self.full_filepath, self.filename, mime, self.db, self.key
+            self.settings, self.full_filepath, self.filename, mime, s3_original_url
         )
         self.db.pictures.update(self.key, "gphotos", json.dumps({"xml": gphotos_data}))
         log.info("Uploaded %s to Gphotos" % self.key)

@@ -43,25 +43,22 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         raise ValueError("Error refreshing %s token: %s" % (SERVICE, response))
 
 
-def _get_file_bytes(filename, db, key):
+def _get_file_bytes(filename, fallback_s3_url):
     try:
         with open(filename, "rb") as fh:
             return fh.read()
     except FileNotFoundError:
-        log.info("Local file not found, attempting to fetch from S3: %s" % filename)
-        picture = db.pictures.by_key(key)
-        if not picture or not picture.get("original"):
-            log.error("Picture not found or has no original URL in S3: %s" % key)
-            raise ValueError("Cannot fetch original file: picture missing from S3")
+        if not fallback_s3_url:
+            log.error("Local file not found and no fallback URL available: %s" % filename)
+            raise
 
-        original_url = picture["original"]
-        log.info("Fetching file from S3 URL: %s" % original_url)
-        response = requests.get(original_url)
+        log.info("Local file not found, fetching from S3: %s" % fallback_s3_url)
+        response = requests.get(fallback_s3_url)
         response.raise_for_status()
         return response.content
 
 
-def _upload_photo(filename, name, access_token, token_type, db, key):
+def _upload_photo(filename, name, access_token, token_type, fallback_s3_url):
     headers = {
         "Authorization": "%s %s" % (token_type, access_token),
         "Content-type": "application/octet-stream",
@@ -69,11 +66,11 @@ def _upload_photo(filename, name, access_token, token_type, db, key):
         "X-Goog-Upload-File-Name": name,
         "X-Goog-Upload-Protocol": "raw",
     }
-    files = _get_file_bytes(filename, db, key)
+    files = _get_file_bytes(filename, fallback_s3_url)
     return do_upload(files, headers)
 
 
-def _upload_video(filename, name, access_token, token_type, mime, db, key):
+def _upload_video(filename, name, access_token, token_type, mime, fallback_s3_url):
     metadata = """<entry xmlns='http://www.w3.org/2005/Atom'>
       <title>%(name)s</title>
       <summary>%(name)s</summary>
@@ -82,7 +79,7 @@ def _upload_video(filename, name, access_token, token_type, mime, db, key):
     </entry>""" % {"name": name}
     metadata = metadata.encode("utf-8")
 
-    file_bytes = _get_file_bytes(filename, db, key)
+    file_bytes = _get_file_bytes(filename, fallback_s3_url)
     file_size = len(file_bytes)
 
     headers = {
@@ -184,18 +181,18 @@ def get_token(settings):
     return access_token, token_type
 
 
-def upload_photo(settings, filename, name, db, key):
+def upload_photo(settings, filename, name, fallback_s3_url):
     """Uploads the given file to Google Photos and returns its url.
-    If the local file is missing, falls back to fetching from the database's original URL."""
+    If the local file is missing, falls back to fetching from the S3 URL."""
     access_token, token_type = get_token(settings)
-    return _upload_photo(filename, name, access_token, token_type, db, key)
+    return _upload_photo(filename, name, access_token, token_type, fallback_s3_url)
 
 
-def upload_video(settings, filename, name, mime, db, key):
+def upload_video(settings, filename, name, mime, fallback_s3_url):
     """Uploads the given file to Google Photos and returns its url.
-    If the local file is missing, falls back to fetching from the database's original URL."""
+    If the local file is missing, falls back to fetching from the S3 URL."""
     access_token, token_type = get_token(settings)
-    return _upload_video(filename, name, access_token, token_type, mime, db, key)
+    return _upload_video(filename, name, access_token, token_type, mime, fallback_s3_url)
 
 
 album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'
