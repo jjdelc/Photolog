@@ -421,7 +421,7 @@ def tag_day(year, month, day):
 @app.route("/jobs/")
 @login_required
 def view_queue():
-    result = queue.peek(200)
+    result = queue.peek(500)
     size = len(queue)
     return render_template("jobs.html", jobs=result, size=size)
 
