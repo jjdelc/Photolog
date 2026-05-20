@@ -139,7 +139,9 @@ class ImageJob(BaseUploadJob):
         batch_id = self.data["batch_id"]
         if batch_id:
             base.batch_2_album(batch_id, self.settings, section="feed")
-        gphotos_data = gphotos.upload_photo(self.settings, self.full_filepath, self.filename)
+        gphotos_data = gphotos.upload_photo(
+            self.settings, self.full_filepath, self.filename, self.db, self.key
+        )
         self.db.pictures.update(self.key, "gphotos", json.dumps({"json": gphotos_data}))
         log.info("Uploaded %s to Gphotos" % self.key)
         return self.data
@@ -222,7 +224,9 @@ class VideoJob(BaseUploadJob):
 
     def gphotos_upload(self):
         mime = self.data["data"]["exif"]["mime"]
-        gphotos_data = gphotos.upload_video(self.settings, self.full_filepath, self.filename, mime)
+        gphotos_data = gphotos.upload_video(
+            self.settings, self.full_filepath, self.filename, mime, self.db, self.key
+        )
         self.db.pictures.update(self.key, "gphotos", json.dumps({"xml": gphotos_data}))
         log.info("Uploaded %s to Gphotos" % self.key)
         return self.data

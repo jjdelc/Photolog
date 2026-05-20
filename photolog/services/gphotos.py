@@ -43,7 +43,25 @@ def refresh_access_token(tokens, client_id, secret, refresh_token):
         raise ValueError("Error refreshing %s token: %s" % (SERVICE, response))
 
 
-def _upload_photo(filename, name, access_token, token_type):
+def _get_file_bytes(filename, db, key):
+    try:
+        with open(filename, "rb") as fh:
+            return fh.read()
+    except FileNotFoundError:
+        log.info("Local file not found, attempting to fetch from S3: %s" % filename)
+        picture = db.pictures.by_key(key)
+        if not picture or not picture.get("original"):
+            log.error("Picture not found or has no original URL in S3: %s" % key)
+            raise ValueError("Cannot fetch original file: picture missing from S3")
+
+        original_url = picture["original"]
+        log.info("Fetching file from S3 URL: %s" % original_url)
+        response = requests.get(original_url)
+        response.raise_for_status()
+        return response.content
+
+
+def _upload_photo(filename, name, access_token, token_type, db, key):
     headers = {
         "Authorization": "%s %s" % (token_type, access_token),
         "Content-type": "application/octet-stream",
@@ -51,12 +69,11 @@ def _upload_photo(filename, name, access_token, token_type):
         "X-Goog-Upload-File-Name": name,
         "X-Goog-Upload-Protocol": "raw",
     }
-    with open(filename, "rb") as fh:
-        files = fh.read()
+    files = _get_file_bytes(filename, db, key)
     return do_upload(files, headers)
 
 
-def _upload_video(filename, name, access_token, token_type, mime):
+def _upload_video(filename, name, access_token, token_type, mime, db, key):
     metadata = """<entry xmlns='http://www.w3.org/2005/Atom'>
       <title>%(name)s</title>
       <summary>%(name)s</summary>
@@ -64,17 +81,21 @@ def _upload_video(filename, name, access_token, token_type, mime):
         term="http://schemas.google.com/photos/2007#photo"/>
     </entry>""" % {"name": name}
     metadata = metadata.encode("utf-8")
+
+    file_bytes = _get_file_bytes(filename, db, key)
+    file_size = len(file_bytes)
+
     headers = {
         "GData-Version": "2",
         "Slug": name,
         "Content-Type": "multipart/related",
         "Authorization": "%s %s" % (token_type, access_token),
-        "Content-Length": str(os.stat(filename).st_size + len(metadata)),
+        "Content-Length": str(file_size + len(metadata)),
         "MIME-version": "1.0",
     }
     files = [
         (None, (None, metadata, "application/atom+xml")),
-        (None, (None, open(filename, "rb"), mime)),
+        (None, (None, file_bytes, mime)),
     ]
     return do_upload(files, headers)
 
@@ -163,16 +184,18 @@ def get_token(settings):
     return access_token, token_type
 
 
-def upload_photo(settings, filename, name):
-    """Uploads the given file to Google Photos and returns its url"""
+def upload_photo(settings, filename, name, db, key):
+    """Uploads the given file to Google Photos and returns its url.
+    If the local file is missing, falls back to fetching from the database's original URL."""
     access_token, token_type = get_token(settings)
-    return _upload_photo(filename, name, access_token, token_type)
+    return _upload_photo(filename, name, access_token, token_type, db, key)
 
 
-def upload_video(settings, filename, name, mime):
-    """Uploads the given file to Google Photos and returns its url"""
+def upload_video(settings, filename, name, mime, db, key):
+    """Uploads the given file to Google Photos and returns its url.
+    If the local file is missing, falls back to fetching from the database's original URL."""
     access_token, token_type = get_token(settings)
-    return _upload_video(filename, name, access_token, token_type, mime)
+    return _upload_video(filename, name, access_token, token_type, mime, db, key)
 
 
 album_meta = """<entry xmlns='http://www.w3.org/2005/Atom'
